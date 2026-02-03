@@ -17,6 +17,7 @@ from app.api.arsip_routes import router as arsip_router
 from app.api.summary_routes import router as summary_router
 from app.api.auth_routes import router as auth_router
 from app.api.data_routes import router as data_router
+from app.api.upload_routes import router as upload_router
 from app.services.integrator import integrator_service
 from app.services.arsip_service import arsip_service
 from app.services.aggregation_service import aggregation_service
@@ -122,6 +123,7 @@ app.include_router(arsip_router)
 app.include_router(summary_router)
 app.include_router(auth_router)
 app.include_router(data_router)
+app.include_router(upload_router)
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -140,6 +142,13 @@ async def login_page(request: Request):
 async def register_page(request: Request):
     """Register Page"""
     return templates.TemplateResponse("register.html", {"request": request})
+
+
+@app.get("/upload", response_class=HTMLResponse)
+async def upload_page(request: Request):
+    """Upload Page"""
+    return templates.TemplateResponse("upload.html", {"request": request})
+
 
 
 @app.get("/api-info")
