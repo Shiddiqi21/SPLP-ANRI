@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 100" fill="none">
+  <!-- Three ascending bars -->
+  <path d="M30 80 L30 50 L45 50 L45 80 Z" fill="#a0a0a0"/>
+  <path d="M50 80 L50 35 L65 35 L65 80 Z" fill="#7ec8e3"/>
+  <path d="M70 80 L70 20 L85 20 L85 80 Z" fill="#00bcd4"/>
+  
+  <!-- Curved line -->
+  <path d="M20 85 Q60 60, 90 30" stroke="#00bcd4" stroke-width="3" fill="none"/>
+  
+  <!-- ANRI text -->
+  <text x="60" y="72" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#555" text-anchor="middle">ANRI</text>
+  
+  <!-- Subtitle -->
+  <text x="60" y="90" font-family="Arial, sans-serif" font-size="6" fill="#777" text-anchor="middle">ARSIP NASIONAL</text>
+  <text x="60" y="98" font-family="Arial, sans-serif" font-size="6" fill="#777" text-anchor="middle">REPUBLIK INDONESIA</text>
+</svg>

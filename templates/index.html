@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - SPLP Data Integrator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #0288D1 0%, #03A9F4 100%);
+            color: white;
+            padding: 12px 25px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-logo {
+            width: 60px;
+            height: 60px;
+            border-radius: 6px;
+        }
+
+        .header-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .header-center {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-user {
+            font-size: 14px;
+            margin-right: 15px;
+        }
+
+        .btn-header {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            font-family: 'Poppins', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        .btn-api {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .btn-api:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-logout {
+            background: #ff5252;
+            color: white;
+        }
+
+        .btn-logout:hover {
+            background: #ff1744;
+        }
+
+        .main-content {
+            padding: 25px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        @media (max-width: 1024px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 600px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .stat-icon svg {
+            width: 24px;
+            height: 24px;
+            fill: white;
+        }
+
+        .stat-icon.red {
+            background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
+        }
+
+        .stat-icon.blue {
+            background: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%);
+        }
+
+        .stat-icon.purple {
+            background: linear-gradient(135deg, #667EEA 0%, #764BA2 100%);
+        }
+
+        .stat-icon.green {
+            background: linear-gradient(135deg, #11998E 0%, #38EF7D 100%);
+        }
+
+        .stat-info h3 {
+            font-size: 24px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .stat-info p {
+            font-size: 13px;
+            color: #666;
+            margin-top: 2px;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #0288D1 0%, #03A9F4 100%);
+            color: white;
+            padding: 15px 20px;
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: #555;
+            margin-bottom: 6px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: 'Poppins', sans-serif;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #03A9F4;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            font-family: 'Poppins', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #0288D1 0%, #03A9F4 100%);
+            color: white;
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(3, 169, 244, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #333;
+            border: 1px solid #ddd;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #666;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            color: #03A9F4;
+            border-bottom-color: #03A9F4;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+            font-size: 13px;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .filter-row .form-control {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-top: 20px;
+        }
+
+        .page-btn {
+            padding: 8px 14px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s ease;
+        }
+
+        .page-btn:hover,
+        .page-btn.active {
+            background: #03A9F4;
+            color: white;
+            border-color: #03A9F4;
+        }
+
+        .alert {
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 13px;
+        }
+
+        .alert-success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #c8e6c9;
+        }
+
+        .alert-error {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #ffcdd2;
+        }
+
+        .loading,
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="header">
+        <div class="header-left">
+            <div class="header-logo"><img src="/static/logo-anri.png" alt="ANRI" onerror="this.style.display='none'">
+            </div>
+            <span class="header-title">SPLP Data Integrator</span>
+        </div>
+        <div class="header-center">Arsip Nasional Republik Indonesia</div>
+        <div class="header-right">
+            <span class="header-user" id="username">Administrator</span>
+            <a href="/docs" class="btn-header btn-api" target="_blank">API Docs</a>
+            <button class="btn-header btn-logout" onclick="logout()">Logout</button>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon red">
+                    <svg viewBox="0 0 24 24">
+                        <path
+                            d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z" />
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <h3 id="stat-instansi">0</h3>
+                    <p>Total Instansi</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon blue">
+                    <svg viewBox="0 0 24 24">
+                        <path
+                            d="M3 3v8h8V3H3zm6 6H5V5h4v4zm-6 4v8h8v-8H3zm6 6H5v-4h4v4zm4-16v8h8V3h-8zm6 6h-4V5h4v4zm-6 4v8h8v-8h-8zm6 6h-4v-4h4v4z" />
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <h3 id="stat-unit">0</h3>
+                    <p>Total Unit Kerja</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon purple">
+                    <svg viewBox="0 0 24 24">
+                        <path
+                            d="M19 3H4.99c-1.11 0-1.98.89-1.98 2L3 19c0 1.1.88 2 1.99 2H19c1.1 0 2-.9 2-2V5c0-1.11-.9-2-2-2zm0 12h-4c0 1.66-1.35 3-3 3s-3-1.34-3-3H4.99V5H19v10z" />
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <h3 id="stat-naskah-masuk">0</h3>
+                    <p>Naskah Masuk</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <h3 id="stat-naskah-keluar">0</h3>
+                    <p>Naskah Keluar</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-grid">
+            <div class="card">
+                <div class="card-header">Input Data</div>
+                <div class="card-body">
+                    <div class="tabs">
+                        <div class="tab active" data-tab="instansi">Instansi</div>
+                        <div class="tab" data-tab="unit">Unit Kerja</div>
+                        <div class="tab" data-tab="data">Data Arsip</div>
+                    </div>
+
+                    <div class="tab-content active" id="tab-instansi">
+                        <div id="alert-instansi"></div>
+                        <form id="form-instansi">
+                            <div class="form-group">
+                                <label>Kode Instansi</label>
+                                <input type="text" class="form-control" id="instansi-kode" placeholder="Contoh: ANRI"
+                                    required>
+                            </div>
+                            <div class="form-group">
+                                <label>Nama Instansi</label>
+                                <input type="text" class="form-control" id="instansi-nama"
+                                    placeholder="Arsip Nasional RI" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Simpan Instansi</button>
+                        </form>
+                    </div>
+
+                    <div class="tab-content" id="tab-unit">
+                        <div id="alert-unit"></div>
+                        <form id="form-unit">
+                            <div class="form-group">
+                                <label>Pilih Instansi</label>
+                                <select class="form-control" id="unit-instansi" required>
+                                    <option value="">-- Pilih Instansi --</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Kode Unit Kerja</label>
+                                <input type="text" class="form-control" id="unit-kode" placeholder="Contoh: UK001"
+                                    required>
+                            </div>
+                            <div class="form-group">
+                                <label>Nama Unit Kerja</label>
+                                <input type="text" class="form-control" id="unit-nama" placeholder="Bagian Umum"
+                                    required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Simpan Unit Kerja</button>
+                        </form>
+                    </div>
+
+                    <div class="tab-content" id="tab-data">
+                        <div id="alert-data"></div>
+                        <form id="form-data">
+                            <div class="form-group">
+                                <label>Pilih Unit Kerja</label>
+                                <select class="form-control" id="data-unit" required>
+                                    <option value="">-- Pilih Unit Kerja --</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Tanggal</label>
+                                <input type="date" class="form-control" id="data-tanggal" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Naskah Masuk</label>
+                                <input type="number" class="form-control" id="data-naskah-masuk" value="0" min="0">
+                            </div>
+                            <div class="form-group">
+                                <label>Naskah Keluar</label>
+                                <input type="number" class="form-control" id="data-naskah-keluar" value="0" min="0">
+                            </div>
+                            <div class="form-group">
+                                <label>Disposisi</label>
+                                <input type="number" class="form-control" id="data-disposisi" value="0" min="0">
+                            </div>
+                            <div class="form-group">
+                                <label>Berkas</label>
+                                <input type="number" class="form-control" id="data-berkas" value="0" min="0">
+                            </div>
+                            <div class="form-group">
+                                <label>Retensi Permanen</label>
+                                <input type="number" class="form-control" id="data-retensi-permanen" value="0" min="0">
+                            </div>
+                            <div class="form-group">
+                                <label>Retensi Musnah</label>
+                                <input type="number" class="form-control" id="data-retensi-musnah" value="0" min="0">
+                            </div>
+                            <div class="form-group">
+                                <label>Naskah Ditindaklanjuti</label>
+                                <input type="number" class="form-control" id="data-naskah-ditindaklanjuti" value="0"
+                                    min="0">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Simpan Data</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">Data Arsip</div>
+                <div class="card-body">
+                    <div class="filter-row">
+                        <select class="form-control" id="filter-instansi">
+                            <option value="">Semua Instansi</option>
+                        </select>
+                        <input type="date" class="form-control" id="filter-start">
+                        <input type="date" class="form-control" id="filter-end">
+                        <button class="btn btn-secondary" onclick="loadData()">Filter</button>
+                    </div>
+
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Instansi</th>
+                                    <th>Unit Kerja</th>
+                                    <th>Tanggal</th>
+                                    <th>Masuk</th>
+                                    <th>Keluar</th>
+                                    <th>Disposisi</th>
+                                    <th>Berkas</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="data-table">
+                                <tr>
+                                    <td colspan="8" class="loading">Memuat data...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination" id="pagination"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const API_BASE = '/api';
+        let currentPage = 1;
+        const pageSize = 20;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check if user is logged in
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
+
+            document.getElementById('data-tanggal').value = new Date().toISOString().split('T')[0];
+            loadStats();
+            loadInstansiList();
+            loadUnitKerjaList();
+            loadData();
+
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            if (user.full_name || user.username) {
+                document.getElementById('username').textContent = user.full_name || user.username;
+            }
+        });
+
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+            });
+        });
+
+        async function loadStats() {
+            try {
+                const res = await fetch(`${API_BASE}/statistics`);
+                const data = await res.json();
+                document.getElementById('stat-instansi').textContent = formatNumber(data.total_instansi);
+                document.getElementById('stat-unit').textContent = formatNumber(data.total_unit_kerja);
+                document.getElementById('stat-naskah-masuk').textContent = formatNumber(data.total_naskah_masuk);
+                document.getElementById('stat-naskah-keluar').textContent = formatNumber(data.total_naskah_keluar);
+            } catch (e) { console.error('Error loading stats:', e); }
+        }
+
+        async function loadInstansiList() {
+            try {
+                const res = await fetch(`${API_BASE}/instansi?limit=500`);
+                const result = await res.json();
+                const options = result.data.map(i => `<option value="${i.id}">${i.nama}</option>`).join('');
+                document.getElementById('unit-instansi').innerHTML = '<option value="">-- Pilih Instansi --</option>' + options;
+                document.getElementById('filter-instansi').innerHTML = '<option value="">Semua Instansi</option>' + options;
+            } catch (e) { console.error('Error loading instansi:', e); }
+        }
+
+        async function loadUnitKerjaList() {
+            try {
+                const res = await fetch(`${API_BASE}/unit-kerja?limit=500`);
+                const result = await res.json();
+                const options = result.data.map(u => `<option value="${u.id}">${u.instansi ? u.instansi.nama + ' - ' : ''}${u.nama}</option>`).join('');
+                document.getElementById('data-unit').innerHTML = '<option value="">-- Pilih Unit Kerja --</option>' + options;
+            } catch (e) { console.error('Error loading unit kerja:', e); }
+        }
+
+        async function loadData(page = 1) {
+            currentPage = page;
+            const offset = (page - 1) * pageSize;
+            const instansiId = document.getElementById('filter-instansi').value;
+            const startDate = document.getElementById('filter-start').value;
+            const endDate = document.getElementById('filter-end').value;
+
+            let url = `${API_BASE}/data-arsip?limit=${pageSize}&offset=${offset}`;
+            if (instansiId) url += `&instansi_id=${instansiId}`;
+            if (startDate) url += `&tanggal_start=${startDate}`;
+            if (endDate) url += `&tanggal_end=${endDate}`;
+
+            try {
+                const res = await fetch(url);
+                const result = await res.json();
+                const tbody = document.getElementById('data-table');
+
+                if (result.data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Tidak ada data</td></tr>';
+                } else {
+                    tbody.innerHTML = result.data.map(d => `
+                        <tr>
+                            <td>${d.unit_kerja?.instansi?.nama || '-'}</td>
+                            <td>${d.unit_kerja?.nama || '-'}</td>
+                            <td>${formatDate(d.tanggal)}</td>
+                            <td>${formatNumber(d.naskah_masuk)}</td>
+                            <td>${formatNumber(d.naskah_keluar)}</td>
+                            <td>${formatNumber(d.disposisi)}</td>
+                            <td>${formatNumber(d.berkas)}</td>
+                            <td><strong>${formatNumber(d.total)}</strong></td>
+                        </tr>
+                    `).join('');
+                }
+                renderPagination(result.total, page);
+            } catch (e) {
+                document.getElementById('data-table').innerHTML = '<tr><td colspan="8" class="empty-state">Error memuat data</td></tr>';
+            }
+        }
+
+        function renderPagination(total, currentPage) {
+            const totalPages = Math.ceil(total / pageSize);
+            const pagination = document.getElementById('pagination');
+            if (totalPages <= 1) { pagination.innerHTML = ''; return; }
+
+            let html = '';
+            if (currentPage > 1) html += `<button class="page-btn" onclick="loadData(${currentPage - 1})">Prev</button>`;
+            for (let i = 1; i <= Math.min(totalPages, 5); i++) {
+                html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="loadData(${i})">${i}</button>`;
+            }
+            if (currentPage < totalPages) html += `<button class="page-btn" onclick="loadData(${currentPage + 1})">Next</button>`;
+            pagination.innerHTML = html;
+        }
+
+        document.getElementById('form-instansi').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const alertBox = document.getElementById('alert-instansi');
+            try {
+                const res = await fetch(`${API_BASE}/instansi`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        kode: document.getElementById('instansi-kode').value,
+                        nama: document.getElementById('instansi-nama').value
+                    })
+                });
+                const result = await res.json();
+                if (res.ok) {
+                    alertBox.innerHTML = '<div class="alert alert-success">Instansi berhasil disimpan!</div>';
+                    e.target.reset();
+                    loadStats();
+                    loadInstansiList();
+                } else {
+                    alertBox.innerHTML = `<div class="alert alert-error">${result.detail || 'Gagal menyimpan'}</div>`;
+                }
+            } catch (error) { alertBox.innerHTML = '<div class="alert alert-error">Terjadi kesalahan</div>'; }
+        });
+
+        document.getElementById('form-unit').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const alertBox = document.getElementById('alert-unit');
+            try {
+                const res = await fetch(`${API_BASE}/unit-kerja`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        instansi_id: parseInt(document.getElementById('unit-instansi').value),
+                        kode: document.getElementById('unit-kode').value,
+                        nama: document.getElementById('unit-nama').value
+                    })
+                });
+                const result = await res.json();
+                if (res.ok) {
+                    alertBox.innerHTML = '<div class="alert alert-success">Unit Kerja berhasil disimpan!</div>';
+                    e.target.reset();
+                    loadStats();
+                    loadUnitKerjaList();
+                } else {
+                    alertBox.innerHTML = `<div class="alert alert-error">${result.detail || 'Gagal menyimpan'}</div>`;
+                }
+            } catch (error) { alertBox.innerHTML = '<div class="alert alert-error">Terjadi kesalahan</div>'; }
+        });
+
+        document.getElementById('form-data').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const alertBox = document.getElementById('alert-data');
+            try {
+                const res = await fetch(`${API_BASE}/data-arsip`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        unit_kerja_id: parseInt(document.getElementById('data-unit').value),
+                        tanggal: document.getElementById('data-tanggal').value,
+                        naskah_masuk: parseInt(document.getElementById('data-naskah-masuk').value) || 0,
+                        naskah_keluar: parseInt(document.getElementById('data-naskah-keluar').value) || 0,
+                        disposisi: parseInt(document.getElementById('data-disposisi').value) || 0,
+                        berkas: parseInt(document.getElementById('data-berkas').value) || 0,
+                        retensi_permanen: parseInt(document.getElementById('data-retensi-permanen').value) || 0,
+                        retensi_musnah: parseInt(document.getElementById('data-retensi-musnah').value) || 0,
+                        naskah_ditindaklanjuti: parseInt(document.getElementById('data-naskah-ditindaklanjuti').value) || 0
+                    })
+                });
+                const result = await res.json();
+                if (res.ok) {
+                    alertBox.innerHTML = '<div class="alert alert-success">Data berhasil disimpan!</div>';
+                    ['naskah-masuk', 'naskah-keluar', 'disposisi', 'berkas', 'retensi-permanen', 'retensi-musnah', 'naskah-ditindaklanjuti'].forEach(f => {
+                        document.getElementById('data-' + f).value = 0;
+                    });
+                    loadStats();
+                    loadData();
+                } else {
+                    alertBox.innerHTML = `<div class="alert alert-error">${result.detail || 'Gagal menyimpan'}</div>`;
+                }
+            } catch (error) { alertBox.innerHTML = '<div class="alert alert-error">Terjadi kesalahan</div>'; }
+        });
+
+        function logout() {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+        }
+
+        function formatNumber(num) { return (num || 0).toLocaleString('id-ID'); }
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            return new Date(dateStr).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+        }
+    </script>
+</body>
+
+</html>
