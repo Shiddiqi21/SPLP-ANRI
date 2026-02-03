@@ -23,8 +23,8 @@ async def upload_file(
     
     Format kolom yang didukung:
     - tanggal: Tanggal data (wajib)
+    - instansi: Nama instansi (wajib)
     - unit_kerja: Nama unit kerja (wajib)
-    - instansi: Nama instansi (opsional, default: ANRI)
     - naskah_masuk: Jumlah naskah masuk
     - naskah_keluar: Jumlah naskah keluar
     - disposisi: Jumlah disposisi

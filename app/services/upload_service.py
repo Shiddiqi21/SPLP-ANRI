@@ -73,7 +73,7 @@ class UploadService:
         
         # Check required columns
         missing_cols = []
-        for col in ['tanggal', 'unit_kerja']:
+        for col in ['tanggal', 'instansi', 'unit_kerja']:
             if col not in df.columns:
                 missing_cols.append(col)
         
@@ -205,12 +205,13 @@ class UploadService:
                     result["stats"]["errors"].append(f"Baris {idx+2}: unit_kerja kosong")
                     continue
                 
-                # Get instansi (use default if not specified)
+                # Get instansi (required)
                 instansi_nama = row.get('instansi', None)
-                if instansi_nama and not pd.isna(instansi_nama):
-                    instansi = self.get_or_create_instansi(str(instansi_nama).strip())
-                else:
-                    instansi = default_instansi
+                if not instansi_nama or pd.isna(instansi_nama) or str(instansi_nama).strip() == '':
+                    result["stats"]["skipped"] += 1
+                    result["stats"]["errors"].append(f"Baris {idx+2}: instansi kosong")
+                    continue
+                instansi = self.get_or_create_instansi(str(instansi_nama).strip())
                 
                 unit = self.get_or_create_unit_kerja(unit_nama, instansi.id)
                 
