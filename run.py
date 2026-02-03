@@ -89,11 +89,16 @@ def run_migrations():
             # Check if any migrations were run
             if "Running upgrade" in result.stderr:
                 print("[Migration] Migrations applied successfully!")
+                # Print details
+                for line in result.stderr.split('\n'):
+                    if 'Running upgrade' in line:
+                        print(f"  -> {line.strip()}")
             else:
                 print("[Migration] Database is up to date")
             return True
         else:
-            print(f"[Migration] Warning: {result.stderr}")
+            print(f"[Migration] ERROR: Migration failed!")
+            print(f"  -> {result.stderr[:500]}")
             return False
     except Exception as e:
         print(f"[Migration] Warning: Could not run migrations - {e}")
@@ -122,12 +127,17 @@ def create_default_admin():
             )
             db.add(admin)
             db.commit()
-            print("[Auth] Default admin user created (admin/admin123)")
+            print("[Auth] Default admin user created!")
+            print("  -> Username: admin")
+            print("  -> Password: admin123")
+        else:
+            print("[Auth] Admin user already exists")
         
         db.close()
         return True
     except Exception as e:
-        print(f"[Auth] Warning: Could not create default admin - {e}")
+        print(f"[Auth] ERROR: Could not create default admin - {e}")
+        print("  -> Make sure migrations have run successfully!")
         return False
 
 
