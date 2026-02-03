@@ -81,15 +81,12 @@ class DataArsip(Base):
     unit_kerja = relationship("UnitKerja", back_populates="data_arsip")
     
     def calculate_total(self):
-        """Calculate total from all data columns"""
+        """Calculate total from main data columns (Masuk, Keluar, Disposisi, Berkas)"""
         self.total = (
             (self.naskah_masuk or 0) +
             (self.naskah_keluar or 0) +
             (self.disposisi or 0) +
-            (self.berkas or 0) +
-            (self.retensi_permanen or 0) +
-            (self.retensi_musnah or 0) +
-            (self.naskah_ditindaklanjuti or 0)
+            (self.berkas or 0)
         )
         return self.total
     

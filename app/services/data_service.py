@@ -209,7 +209,7 @@ class DataService:
         retensi_musnah: int = 0,
         naskah_ditindaklanjuti: int = 0
     ) -> Dict[str, Any]:
-        """Create or update data arsip for a unit kerja on a specific date"""
+        """Create or update (SUM) data arsip for a unit kerja on a specific date"""
         with get_db_context() as db:
             try:
                 # Check unit kerja exists
@@ -224,14 +224,14 @@ class DataService:
                 ).first()
                 
                 if data:
-                    # Update existing
-                    data.naskah_masuk = naskah_masuk
-                    data.naskah_keluar = naskah_keluar
-                    data.disposisi = disposisi
-                    data.berkas = berkas
-                    data.retensi_permanen = retensi_permanen
-                    data.retensi_musnah = retensi_musnah
-                    data.naskah_ditindaklanjuti = naskah_ditindaklanjuti
+                    # SUM with existing values (merge data)
+                    data.naskah_masuk = (data.naskah_masuk or 0) + naskah_masuk
+                    data.naskah_keluar = (data.naskah_keluar or 0) + naskah_keluar
+                    data.disposisi = (data.disposisi or 0) + disposisi
+                    data.berkas = (data.berkas or 0) + berkas
+                    data.retensi_permanen = (data.retensi_permanen or 0) + retensi_permanen
+                    data.retensi_musnah = (data.retensi_musnah or 0) + retensi_musnah
+                    data.naskah_ditindaklanjuti = (data.naskah_ditindaklanjuti or 0) + naskah_ditindaklanjuti
                     data.calculate_total()
                 else:
                     # Create new

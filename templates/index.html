@@ -584,12 +584,23 @@
                 <div class="card-header">Data Arsip</div>
                 <div class="card-body">
                     <div class="filter-row">
-                        <select class="form-control" id="filter-instansi">
-                            <option value="">Semua Instansi</option>
-                        </select>
-                        <input type="date" class="form-control" id="filter-start">
-                        <input type="date" class="form-control" id="filter-end">
+                        <div style="position: relative; flex: 1;">
+                            <input type="text" class="form-control" id="filter-instansi-input"
+                                placeholder="Cari Instansi..." list="instansi-list"
+                                oninput="handleInstansiFilter(this.value)">
+                            <datalist id="instansi-list"></datalist>
+                            <input type="hidden" id="filter-instansi">
+                        </div>
+                        <div style="position: relative; flex: 1;">
+                            <input type="text" class="form-control" id="filter-unit-kerja-input"
+                                placeholder="Cari Unit Kerja..." list="unit-kerja-list">
+                            <datalist id="unit-kerja-list"></datalist>
+                            <input type="hidden" id="filter-unit-kerja">
+                        </div>
+                        <input type="date" class="form-control" id="filter-tanggal">
                         <button class="btn btn-secondary" onclick="loadData()">Filter</button>
+                        <button class="btn btn-outline" onclick="resetFilter()"
+                            style="background: #f0f0f0; color: #333;">Reset</button>
                     </div>
 
                     <div class="table-container">
@@ -670,7 +681,11 @@
                 const result = await res.json();
                 const options = result.data.map(i => `<option value="${i.id}">${i.nama}</option>`).join('');
                 document.getElementById('unit-instansi').innerHTML = '<option value="">-- Pilih Instansi --</option>' + options;
-                document.getElementById('filter-instansi').innerHTML = '<option value="">Semua Instansi</option>' + options;
+
+                // Populate datalist for search
+                window.instansiData = result.data;
+                const datalistOptions = result.data.map(i => `<option value="${i.nama}" data-id="${i.id}">`).join('');
+                document.getElementById('instansi-list').innerHTML = datalistOptions;
             } catch (e) { console.error('Error loading instansi:', e); }
         }
 
@@ -680,20 +695,82 @@
                 const result = await res.json();
                 const options = result.data.map(u => `<option value="${u.id}">${u.instansi ? u.instansi.nama + ' - ' : ''}${u.nama}</option>`).join('');
                 document.getElementById('data-unit').innerHTML = '<option value="">-- Pilih Unit Kerja --</option>' + options;
+
+                // Store for search
+                window.unitKerjaData = result.data;
+                updateUnitKerjaDatalist(result.data);
             } catch (e) { console.error('Error loading unit kerja:', e); }
+        }
+
+        function updateUnitKerjaDatalist(data) {
+            const datalistOptions = data.map(u => {
+                const label = u.instansi ? `${u.instansi.nama} - ${u.nama}` : u.nama;
+                return `<option value="${label}" data-id="${u.id}">`;
+            }).join('');
+            document.getElementById('unit-kerja-list').innerHTML = datalistOptions;
+        }
+
+        function handleInstansiFilter(value) {
+            const instansi = window.instansiData?.find(i => i.nama === value);
+            document.getElementById('filter-instansi').value = instansi ? instansi.id : '';
+
+            // Update unit kerja datalist based on instansi
+            if (instansi) {
+                loadUnitKerjaByInstansi(instansi.id);
+            } else {
+                updateUnitKerjaDatalist(window.unitKerjaData || []);
+            }
+        }
+
+        async function loadUnitKerjaByInstansi(instansiId) {
+            try {
+                const res = await fetch(`${API_BASE}/instansi/${instansiId}/unit-kerja?limit=500`);
+                const result = await res.json();
+                updateUnitKerjaDatalist(result.data.map(u => ({ ...u, instansi: null })));
+            } catch (e) { console.error('Error loading unit kerja by instansi:', e); }
+        }
+
+        async function loadUnitKerjaFilter() {
+            const instansiId = document.getElementById('filter-instansi').value;
+            if (!instansiId) {
+                updateUnitKerjaDatalist(window.unitKerjaData || []);
+                return;
+            }
+            await loadUnitKerjaByInstansi(instansiId);
+        }
+
+        function resetFilter() {
+            document.getElementById('filter-instansi-input').value = '';
+            document.getElementById('filter-instansi').value = '';
+            document.getElementById('filter-unit-kerja-input').value = '';
+            document.getElementById('filter-unit-kerja').value = '';
+            document.getElementById('filter-tanggal').value = '';
+            updateUnitKerjaDatalist(window.unitKerjaData || []);
+            loadData();
         }
 
         async function loadData(page = 1) {
             currentPage = page;
             const offset = (page - 1) * pageSize;
             const instansiId = document.getElementById('filter-instansi').value;
-            const startDate = document.getElementById('filter-start').value;
-            const endDate = document.getElementById('filter-end').value;
+
+            // Get unit kerja ID from text input
+            const unitKerjaInput = document.getElementById('filter-unit-kerja-input').value;
+            let unitKerjaId = '';
+            if (unitKerjaInput && window.unitKerjaData) {
+                const unit = window.unitKerjaData.find(u => {
+                    const label = u.instansi ? `${u.instansi.nama} - ${u.nama}` : u.nama;
+                    return label === unitKerjaInput || u.nama === unitKerjaInput;
+                });
+                if (unit) unitKerjaId = unit.id;
+            }
+
+            const tanggal = document.getElementById('filter-tanggal').value;
 
             let url = `${API_BASE}/data-arsip?limit=${pageSize}&offset=${offset}`;
             if (instansiId) url += `&instansi_id=${instansiId}`;
-            if (startDate) url += `&tanggal_start=${startDate}`;
-            if (endDate) url += `&tanggal_end=${endDate}`;
+            if (unitKerjaId) url += `&unit_kerja_id=${unitKerjaId}`;
+            if (tanggal) url += `&tanggal_start=${tanggal}&tanggal_end=${tanggal}`;
 
             try {
                 const res = await fetch(url);
