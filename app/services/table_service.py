@@ -383,36 +383,41 @@ class TableService:
                 db.rollback()
                 return {"status": "error", "message": str(e)}
 
-    def upsert_data(self, table_id: int, unit_kerja_id: int, tanggal: date, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Upsert (Insert or Merge/Sum) data into PHYSICAL table"""
-        with get_db_context() as db:
+    def upsert_data(self, table_id: int, unit_kerja_id: int, tanggal: date, data: Dict[str, Any], db=None, table_obj=None) -> Dict[str, Any]:
+        """
+        Upsert (Insert or Merge/Sum) data into PHYSICAL table
+        :param db: Optional SQLAlchemy Session. If provided, function will NOT commit.
+        :param table_obj: Optional TableDefinition object. If provided, skips looking it up.
+        """
+        # Helper to run logic inside a session
+        def _process(session, tbl):
             try:
-                table = db.query(TableDefinition).options(joinedload(TableDefinition.columns)).filter(TableDefinition.id == table_id).first()
-                if not table:
+                if not tbl:
+                    tbl = session.query(TableDefinition).options(joinedload(TableDefinition.columns)).filter(TableDefinition.id == table_id).first()
+                
+                if not tbl:
                     return {"status": "error", "message": "Tabel tidak ditemukan"}
                 
-                safe_name = self._sanitize_name(table.name)
+                safe_name = self._sanitize_name(tbl.name)
                 
                 # Check existing record
-                # Query: SELECT id, [cols] FROM table WHERE unit_kerja_id = :uid AND tanggal = :tgl
-                sel_cols = ["id", "total"] + [self._sanitize_name(c.name) for c in table.columns]
+                sel_cols = ["id", "total"] + [self._sanitize_name(c.name) for c in tbl.columns]
                 sel_sql = f"SELECT {', '.join(sel_cols)} FROM {safe_name} WHERE unit_kerja_id = :uid AND tanggal = :tgl"
                 
-                existing = db.execute(text(sel_sql), {"uid": unit_kerja_id, "tgl": tanggal}).mappings().first()
+                existing = session.execute(text(sel_sql), {"uid": unit_kerja_id, "tgl": tanggal}).mappings().first()
                 
                 if existing:
                     # UPDATE (Merge Sums)
                     update_sets = []
-                    params = {"id": existing['id'], "uid": unit_kerja_id, "tgl": tanggal} # uid/tgl not used in set but for context
+                    params = {"id": existing['id'], "uid": unit_kerja_id, "tgl": tanggal} 
                     
                     new_total = 0
                     
-                    for col in table.columns:
+                    for col in tbl.columns:
                         safe_col = self._sanitize_name(col.name)
                         new_val = data.get(col.name, 0)
                         
                         if col.is_summable and col.data_type == 'integer':
-                            # Sum with existing
                             old_val = existing.get(safe_col) or 0
                             try:
                                 final_val = int(old_val) + int(new_val)
@@ -423,37 +428,28 @@ class TableService:
                             params[safe_col] = final_val
                             new_total += final_val
                         else:
-                            # Overwrite non-summable (or keep? Upload usually overwrites)
                             val = data.get(col.name)
-                            # Handle text/etc
                             update_sets.append(f"{safe_col} = :{safe_col}")
                             params[safe_col] = val
                             
-                            # Note: Non-summable ints don't add to total? 
-                            # Logic in existing code: total = sum of summable columns.
-                            
                     update_sets.append("total = :total")
                     params["total"] = new_total
-                    update_sets.append("updated_at = :now")
+                update_sets.append("updated_at = :now")
                     params["now"] = datetime.utcnow()
                     
                     sql = f"UPDATE {safe_name} SET {', '.join(update_sets)} WHERE id = :id"
-                    db.execute(text(sql), params)
-                    db.commit()
+                    session.execute(text(sql), params)
+                    if not db: session.commit() # Only commit if we own the session
                     return {"status": "success", "action": "updated"}
                     
                 else:
-                    # INSERT (Reuse create logic but we are inside context)
-                    # We can call create_dynamic_data but we are already in transaction? 
-                    # create_dynamic_data creates its own session context.
-                    # Copy logic here to be safe and efficient.
-                    
+                    # INSERT
                     cols = ["unit_kerja_id", "tanggal"]
                     vals = [":uid", ":tgl"]
                     params = {"uid": unit_kerja_id, "tgl": tanggal}
                     
                     total = 0
-                    for col in table.columns:
+                    for col in tbl.columns:
                         safe_col = self._sanitize_name(col.name)
                         if col.name in data:
                             cols.append(safe_col)
@@ -469,12 +465,22 @@ class TableService:
                     params["total"] = total
                     
                     sql = f"INSERT INTO {safe_name} ({', '.join(cols)}) VALUES ({', '.join(vals)})"
-                    db.execute(text(sql), params)
-                    db.commit()
+                    session.execute(text(sql), params)
+                    if not db: session.commit()
                     return {"status": "success", "action": "inserted"}
 
             except Exception as e:
-                db.rollback()
+                # Only rollback if we own the transaction, otherwise let caller handle
+                if not db: session.rollback()
+                # But if we don't rollback here, the error bubbles up? 
+                # Retain original behavior: return error dict
                 return {"status": "error", "message": str(e)}
+
+        # Main logic
+        if db:
+            return _process(db, table_obj)
+        else:
+            with get_db_context() as session:
+                return _process(session, table_obj)
 
 table_service = TableService()

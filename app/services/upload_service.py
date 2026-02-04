@@ -198,9 +198,13 @@ class UploadService:
             result["message"] = "Definisi tabel tidak ditemukan"
             return result
             
-        table_id = table_def['id']
-        columns = table_def['columns']
-        summable_cols = self.db.query(ColumnDefinition).filter(ColumnDefinition.table_id == table_id).all()
+        # Get table info (Pre-fetch for cache)
+        table_def_obj = self.db.query(TableDefinition).options(joinedload(TableDefinition.columns)).filter(TableDefinition.id == table_id).first()
+        if not table_def_obj:
+            result["message"] = "Tabel tidak ditemukan"
+            return result
+            
+        columns = [col.to_dict() for col in table_def_obj.columns] # Use loaded columns
         
         # Parse file
         df, error = self.parse_file(file_content, filename)
@@ -218,6 +222,7 @@ class UploadService:
         result["stats"]["total_rows"] = len(df)
         
         # Process each row
+        print(f"[Upload] Starting bulk process for {len(df)} rows...")
         for idx, row in df.iterrows():
             try:
                 # Get unit kerja
@@ -255,11 +260,14 @@ class UploadService:
                          json_data[name] = 0 if col['data_type'] == 'integer' else ''
                 
                 # Call TableService to Upsert (Insert/Sum) into Physical Table
+                # PASS SESSION AND TABLE OBJECT FOR OPTIMIZATION
                 upsert_res = table_service.upsert_data(
                     table_id=table_id,
                     unit_kerja_id=unit.id,
                     tanggal=tanggal,
-                    data=json_data
+                    data=json_data,
+                    db=self.db,           # reuse session
+                    table_obj=table_def_obj # reuse definition
                 )
                 
                 if upsert_res["status"] == "success":
