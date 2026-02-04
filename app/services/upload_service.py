@@ -6,6 +6,7 @@ from datetime import datetime, date
 from typing import List, Dict, Any, Tuple, Optional
 import pandas as pd
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import func
 from app.models.arsip_models import Instansi, UnitKerja 
 from app.models.table_models import TableDefinition, ColumnDefinition, DynamicData
 from app.services.table_service import table_service
@@ -99,12 +100,13 @@ class UploadService:
         return len(errors) == 0, errors
     
     def get_or_create_instansi(self, nama: str) -> Instansi:
-        """Get existing or create new instansi"""
+        """Get existing or create new instansi (Case Insensitive)"""
         # Default to ANRI if not specified
         if not nama or pd.isna(nama):
             nama = "Arsip Nasional Republik Indonesia"
         
-        instansi = self.db.query(Instansi).filter(Instansi.nama == nama).first()
+        # Check case-insensitive
+        instansi = self.db.query(Instansi).filter(func.lower(Instansi.nama) == nama.lower()).first()
         if not instansi:
             # Generate kode from nama
             kode = ''.join([word[0].upper() for word in nama.split()[:3]])
@@ -114,9 +116,9 @@ class UploadService:
         return instansi
     
     def get_or_create_unit_kerja(self, nama: str, instansi_id: int) -> UnitKerja:
-        """Get existing or create new unit kerja"""
+        """Get existing or create new unit kerja (Case Insensitive)"""
         unit = self.db.query(UnitKerja).filter(
-            UnitKerja.nama == nama,
+            func.lower(UnitKerja.nama) == nama.lower(),
             UnitKerja.instansi_id == instansi_id
         ).first()
         
