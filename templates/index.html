@@ -27,16 +27,16 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            opacity: 0.08;
+            opacity: 0.4;
             z-index: 0;
             pointer-events: none;
         }
 
         .watermark-logo img {
-            width: 80vw;
-            max-width: 800px;
+            width: 60vw;
+            max-width: none;
             height: auto;
-            opacity: 0.2;
+            opacity: 1;
         }
 
         .header {
@@ -405,6 +405,134 @@
             text-align: center;
             padding: 40px;
             color: #999;
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(135deg, #0288D1 0%, #03A9F4 100%);
+            color: white;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .close-modal {
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            background: none;
+            border: none;
+            opacity: 0.8;
+            transition: opacity 0.3s;
+        }
+
+        .close-modal:hover {
+            opacity: 1;
+        }
+
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .table-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            transition: background 0.2s;
+        }
+
+        .table-list-item:hover {
+            background-color: #f9f9f9;
+        }
+
+        .table-list-info h4 {
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .table-list-info p {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .badge-default {
+            background-color: #4CAF50;
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
+        .column-builder-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 6px;
         }
     </style>
 </head>
@@ -426,162 +554,124 @@
             <span class="header-user" id="username">Administrator</span>
             <a href="/upload" class="btn-header btn-api"
                 style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">Upload Data</a>
+            <button class="btn-header btn-api" onclick="manageTables()">Kelola Tabel</button>
             <a href="/docs" class="btn-header btn-api" target="_blank">API Docs</a>
             <button class="btn-header btn-logout" onclick="logout()">Logout</button>
         </div>
     </header>
 
     <main class="main-content">
-        <div class="stats-grid">
+        <!-- Stats Grid Container -->
+        <div class="stats-grid" id="stats-container">
+            <!-- Dynamic Stats will be rendered here -->
             <div class="stat-card">
-                <div class="stat-icon red">
-                    <svg viewBox="0 0 24 24">
-                        <path
-                            d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z" />
-                    </svg>
-                </div>
                 <div class="stat-info">
-                    <h3 id="stat-instansi">0</h3>
-                    <p>Total Instansi</p>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon blue">
-                    <svg viewBox="0 0 24 24">
-                        <path
-                            d="M3 3v8h8V3H3zm6 6H5V5h4v4zm-6 4v8h8v-8H3zm6 6H5v-4h4v4zm4-16v8h8V3h-8zm6 6h-4V5h4v4zm-6 4v8h8v-8h-8zm6 6h-4v-4h4v4z" />
-                    </svg>
-                </div>
-                <div class="stat-info">
-                    <h3 id="stat-unit">0</h3>
-                    <p>Total Unit Kerja</p>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon purple">
-                    <svg viewBox="0 0 24 24">
-                        <path
-                            d="M19 3H4.99c-1.11 0-1.98.89-1.98 2L3 19c0 1.1.88 2 1.99 2H19c1.1 0 2-.9 2-2V5c0-1.11-.9-2-2-2zm0 12h-4c0 1.66-1.35 3-3 3s-3-1.34-3-3H4.99V5H19v10z" />
-                    </svg>
-                </div>
-                <div class="stat-info">
-                    <h3 id="stat-naskah-masuk">0</h3>
-                    <p>Naskah Masuk</p>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon green">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
-                    </svg>
-                </div>
-                <div class="stat-info">
-                    <h3 id="stat-naskah-keluar">0</h3>
-                    <p>Naskah Keluar</p>
+                    <h3>Loading...</h3>
                 </div>
             </div>
         </div>
 
         <div class="content-grid">
+            <!-- Dynamic Input Form -->
             <div class="card">
-                <div class="card-header">Input Data</div>
+                <div class="card-header">Input Data Satuan</div>
                 <div class="card-body">
+                    <!-- Tabs -->
                     <div class="tabs">
-                        <div class="tab active" data-tab="instansi">Instansi</div>
-                        <div class="tab" data-tab="unit">Unit Kerja</div>
-                        <div class="tab" data-tab="data">Data Arsip</div>
+                        <div class="tab active" onclick="switchTab('tab-data')">Input Data</div>
+                        <div class="tab" onclick="switchTab('tab-instansi')">Input Instansi</div>
+                        <div class="tab" onclick="switchTab('tab-unit')">Input Unit Kerja</div>
                     </div>
 
-                    <div class="tab-content active" id="tab-instansi">
-                        <div id="alert-instansi"></div>
-                        <form id="form-instansi">
-                            <div class="form-group">
-                                <label>Kode Instansi</label>
-                                <input type="text" class="form-control" id="instansi-kode" placeholder="Contoh: ANRI"
-                                    required>
-                            </div>
-                            <div class="form-group">
-                                <label>Nama Instansi</label>
-                                <input type="text" class="form-control" id="instansi-nama"
-                                    placeholder="Arsip Nasional RI" required>
-                            </div>
-                            <button type="submit" class="btn btn-primary">Simpan Instansi</button>
-                        </form>
-                    </div>
-
-                    <div class="tab-content" id="tab-unit">
-                        <div id="alert-unit"></div>
-                        <form id="form-unit">
-                            <div class="form-group">
-                                <label>Pilih Instansi</label>
-                                <select class="form-control" id="unit-instansi" required>
-                                    <option value="">-- Pilih Instansi --</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Kode Unit Kerja</label>
-                                <input type="text" class="form-control" id="unit-kode" placeholder="Contoh: UK001"
-                                    required>
-                            </div>
-                            <div class="form-group">
-                                <label>Nama Unit Kerja</label>
-                                <input type="text" class="form-control" id="unit-nama" placeholder="Bagian Umum"
-                                    required>
-                            </div>
-                            <button type="submit" class="btn btn-primary">Simpan Unit Kerja</button>
-                        </form>
-                    </div>
-
-                    <div class="tab-content" id="tab-data">
-                        <div id="alert-data"></div>
+                    <!-- Tab Content: Data -->
+                    <div id="tab-data" class="tab-content active">
                         <form id="form-data">
                             <div class="form-group">
-                                <label>Pilih Unit Kerja</label>
-                                <select class="form-control" id="data-unit" required>
-                                    <option value="">-- Pilih Unit Kerja --</option>
+                                <label>Instansi</label>
+                                <input type="text" class="form-control" id="input-instansi-filter"
+                                    placeholder="Ketik nama instansi..." list="instansi-list-input"
+                                    oninput="filterUnitKerjaInput(this.value)">
+                                <datalist id="instansi-list-input"></datalist>
+                            </div>
+                            <div class="form-group">
+                                <label>Unit Kerja</label>
+                                <select class="form-control" id="data-unit" required disabled>
+                                    <option value="">Pilih Instansi Terlebih Dahulu</option>
                                 </select>
                             </div>
                             <div class="form-group">
                                 <label>Tanggal</label>
                                 <input type="date" class="form-control" id="data-tanggal" required>
                             </div>
-                            <div class="form-group">
-                                <label>Naskah Masuk</label>
-                                <input type="number" class="form-control" id="data-naskah-masuk" value="0" min="0">
-                            </div>
-                            <div class="form-group">
-                                <label>Naskah Keluar</label>
-                                <input type="number" class="form-control" id="data-naskah-keluar" value="0" min="0">
-                            </div>
-                            <div class="form-group">
-                                <label>Disposisi</label>
-                                <input type="number" class="form-control" id="data-disposisi" value="0" min="0">
-                            </div>
-                            <div class="form-group">
-                                <label>Berkas</label>
-                                <input type="number" class="form-control" id="data-berkas" value="0" min="0">
-                            </div>
-                            <div class="form-group">
-                                <label>Retensi Permanen</label>
-                                <input type="number" class="form-control" id="data-retensi-permanen" value="0" min="0">
-                            </div>
-                            <div class="form-group">
-                                <label>Retensi Musnah</label>
-                                <input type="number" class="form-control" id="data-retensi-musnah" value="0" min="0">
-                            </div>
-                            <div class="form-group">
-                                <label>Naskah Ditindaklanjuti</label>
-                                <input type="number" class="form-control" id="data-naskah-ditindaklanjuti" value="0"
-                                    min="0">
-                            </div>
+
+                            <!-- Dynamic Inputs Container -->
+                            <div id="dynamic-inputs"></div>
+
                             <button type="submit" class="btn btn-primary">Simpan Data</button>
                         </form>
+                        <div id="alert-data" style="margin-top: 15px;"></div>
+                    </div>
+
+                    <!-- Tab Content: Instansi -->
+                    <div id="tab-instansi" class="tab-content">
+                        <form id="form-instansi">
+                            <div class="form-group">
+                                <label>Kode Instansi</label>
+                                <input type="text" class="form-control" id="instansi-kode" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Nama Instansi</label>
+                                <input type="text" class="form-control" id="instansi-nama" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Simpan Instansi</button>
+                        </form>
+                        <div id="alert-instansi" style="margin-top: 15px;"></div>
+                    </div>
+
+                    <!-- Tab Content: Unit Kerja -->
+                    <div id="tab-unit" class="tab-content">
+                        <form id="form-unit">
+                            <div class="form-group">
+                                <label>Pilih Instansi</label>
+                                <input type="text" class="form-control" id="unit-instansi-search"
+                                    placeholder="Cari Instansi..." list="instansi-list-unit">
+                                <datalist id="instansi-list-unit"></datalist>
+                                <input type="hidden" id="unit-instansi" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Kode Unit Kerja</label>
+                                <input type="text" class="form-control" id="unit-kode" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Nama Unit Kerja</label>
+                                <input type="text" class="form-control" id="unit-nama" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Simpan Unit Kerja</button>
+                        </form>
+                        <div id="alert-unit" style="margin-top: 15px;"></div>
                     </div>
                 </div>
             </div>
 
+            <!-- Data Table Card -->
             <div class="card">
-                <div class="card-header">Data Arsip</div>
+                <div class="card-header"
+                    style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: white; opacity: 0.9;">
+                            <path
+                                d="M4 14h4v-4H4v4zm0 5h4v-4H4v4zM4 9h4V5H4v4zm5 5h12v-4H9v4zm0 5h12v-4H9v4zM9 5v4h12V5H9z" />
+                        </svg>
+                        <select id="table-selector" class="form-control"
+                            style="width: auto; background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3); font-weight: 600; font-size: 16px; cursor: pointer; padding-right: 30px;"
+                            onchange="changeTable()">
+                            <option value="" style="color: black;">Loading tables...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <!-- Extra tools if needed -->
+                    </div>
+                </div>
                 <div class="card-body">
                     <div class="filter-row">
                         <div style="position: relative; flex: 1;">
@@ -604,18 +694,9 @@
                     </div>
 
                     <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Instansi</th>
-                                    <th>Unit Kerja</th>
-                                    <th>Tanggal</th>
-                                    <th>Masuk</th>
-                                    <th>Keluar</th>
-                                    <th>Disposisi</th>
-                                    <th>Berkas</th>
-                                    <th>Total</th>
-                                </tr>
+                        <table id="main-table">
+                            <thead id="table-head">
+                                <!-- Dynamic Headers -->
                             </thead>
                             <tbody id="data-table">
                                 <tr>
@@ -630,133 +711,328 @@
         </div>
     </main>
 
+    <!-- Manage Tables Modal -->
+    <div id="modal-manage-tables" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title">Manajemen Tabel</span>
+                <button class="close-modal" onclick="closeModal('modal-manage-tables')">&times;</button>
+            </div>
+            <div class="modal-body" id="table-list-container">
+                <!-- Table list injected here -->
+                <p class="loading">Memuat daftar...</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="openCreateModal()">+ Buat Tabel Baru</button>
+                <button class="btn btn-secondary" onclick="closeModal('modal-manage-tables')">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Table Modal -->
+    <div id="modal-create-table" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title">Buat Tabel Baru</span>
+                <button class="close-modal" onclick="closeModal('modal-create-table')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="form-create-table">
+                    <div class="form-group">
+                        <label>Nama Tabel (Display)</label>
+                        <input type="text" class="form-control" id="new-table-display"
+                            placeholder="Contoh: Laporan Penjualan 2024" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Deskripsi (Opsional)</label>
+                        <input type="text" class="form-control" id="new-table-desc"
+                            placeholder="Deskripsi singkat tabel...">
+                    </div>
+
+                    <h4 style="margin: 15px 0 10px; font-size: 14px; color: #333;">Definisi Kolom</h4>
+                    <div id="column-builder-container" style="background: #f0f0f0; padding: 10px; border-radius: 8px;">
+                        <div id="column-builder"></div>
+                        <button type="button" class="btn btn-sm btn-secondary"
+                            style="margin-top: 10px; width: 100%; border: 1px dashed #999;" onclick="addColumnRow()">+
+                            Tambah Kolom</button>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('modal-create-table')">Batal</button>
+                <button class="btn btn-primary" onclick="submitCreateTable()">Simpan Tabel</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const API_BASE = '/api';
         let currentPage = 1;
         const pageSize = 20;
+        let currentTableId = null;
+        let currentTableDef = null;
 
         document.addEventListener('DOMContentLoaded', () => {
-            // Check if user is logged in
             const token = localStorage.getItem('access_token');
+
             if (!token) {
                 window.location.href = '/login';
                 return;
             }
 
-            document.getElementById('data-tanggal').value = new Date().toISOString().split('T')[0];
-            loadStats();
+            // Load initial data
+            loadTables();
             loadInstansiList();
-            loadUnitKerjaList();
-            loadData();
 
             const user = JSON.parse(localStorage.getItem('user') || '{}');
+
             if (user.full_name || user.username) {
                 document.getElementById('username').textContent = user.full_name || user.username;
             }
         });
 
-        document.querySelectorAll('.tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                tab.classList.add('active');
-                document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
-            });
-        });
+        async function loadTables() {
+            try {
+                const res = await fetch(`${API_BASE}/tables`);
+                // Handle non-200 responses
+                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+
+                const result = await res.json();
+                const tables = result.data || []; // Ensure array
+
+                const selector = document.getElementById('table-selector');
+
+                if (tables.length === 0) {
+                    selector.innerHTML = '<option value="">Tidak ada tabel</option>';
+
+                    // Clear Loading States
+                    document.getElementById('stats-container').innerHTML = `
+                        <div class="stat-card">
+                            <div class="stat-info">
+                                <h3>Data Kosong</h3>
+                                <p>Belum ada tabel. Klik "Kelola Tabel" untuk membuat.</p>
+                            </div>
+                        </div>`;
+                    document.getElementById('data-table').innerHTML = '<tr><td colspan="8" class="empty-state" style="text-align:center; padding:20px;">Belum ada tabel yang dibuat.</td></tr>';
+                    document.getElementById('dynamic-inputs').innerHTML = '<p style="text-align:center; color:#999; margin:20px;">Pilih atau buat tabel terlebih dahulu.</p>';
+                    return;
+                }
+
+                selector.innerHTML = tables.map(t => `<option value="${t.id}" ${t.is_default ? 'selected' : ''} style="color: #333;">${t.display_name}</option>`).join('');
+
+                // Set default
+                const defaultTable = tables.find(t => t.is_default) || tables[0];
+                if (defaultTable) {
+                    currentTableId = defaultTable.id;
+                    selector.value = currentTableId; // Ensure selector matches
+                    await handleTableChange(currentTableId);
+                }
+            } catch (e) {
+                console.error("Error loading tables", e);
+                const selector = document.getElementById('table-selector');
+                selector.innerHTML = '<option value="">Gagal memuat</option>';
+
+                // Show error in UI
+                document.getElementById('stats-container').innerHTML = `
+                    <div class="stat-card" style="border-left: 5px solid #f44336;">
+                        <div class="stat-info">
+                            <h3 style="color: #d32f2f;">Gagal Terhubung</h3>
+                            <p>Cek koneksi server api (${e.message})</p>
+                        </div>
+                    </div>`;
+            }
+        }
+
+        async function changeTable() {
+            const tableId = document.getElementById('table-selector').value;
+            await handleTableChange(tableId);
+        }
+
+        async function handleTableChange(tableId) {
+            currentTableId = tableId;
+
+            // Fetch table definition
+            try {
+                const res = await fetch(`${API_BASE}/tables/${tableId}`);
+                const result = await res.json();
+                currentTableDef = result.data;
+
+                // document.getElementById('table-title').textContent = currentTableDef.display_name; // Removed: Selector is now the title
+
+                // 1. Render Headers
+                renderTableHeader();
+
+                // 2. Render Stats
+                loadStats();
+
+                // 3. Load Data
+                loadData(1);
+            }
+
+            catch (e) {
+                console.error("Error changing table", e);
+            }
+        }
+
+        function renderTableHeader() {
+            const thead = document.getElementById('table-head');
+            const columns = ['Instansi',
+                'Unit Kerja',
+                'Tanggal',
+                ...currentTableDef.columns.map(c => c.display_name)];
+            // Optionally add 'Total' if there are summable columns
+            const hasSummable = currentTableDef.columns.some(c => c.is_summable);
+            if (hasSummable) columns.push('Total');
+
+            thead.innerHTML = `<tr>${columns.map(c => `<th>${c}</th>`).join('')}</tr>`;
+
+            // Re-render form whenever table changes
+            renderEntryForm();
+        }
 
         async function loadStats() {
             try {
-                const res = await fetch(`${API_BASE}/statistics`);
-                const data = await res.json();
-                document.getElementById('stat-instansi').textContent = formatNumber(data.total_instansi);
-                document.getElementById('stat-unit').textContent = formatNumber(data.total_unit_kerja);
-                document.getElementById('stat-naskah-masuk').textContent = formatNumber(data.total_naskah_masuk);
-                document.getElementById('stat-naskah-keluar').textContent = formatNumber(data.total_naskah_keluar);
-            } catch (e) { console.error('Error loading stats:', e); }
+                const res = await fetch(`${API_BASE}/tables/${currentTableId}/statistics`);
+                const result = await res.json();
+                const data = result.data;
+
+                const statsContainer = document.getElementById('stats-container');
+                let html = '';
+
+                // Static stats for Instansi/Unit
+                html += `<div class="stat-card"><div class="stat-icon red"><svg viewBox="0 0 24 24"><path d="M12 7V3H2v18h20V7H12z" /></svg></div><div class="stat-info"><h3>${formatNumber(data.total_instansi)}</h3><p>Total Instansi</p></div></div><div class="stat-card"><div class="stat-icon blue"><svg viewBox="0 0 24 24"><path d="M3 3v8h8V3H3zm6 6H5V5h4v4zm-6 4v8h8v-8H3zm6 6H5v-4h4v4zm4-16v8h8V3h-8zm6 6h-4V5h4v4zm-6 4v8h8v-8h-8zm6 6h-4v-4h4v4z" /></svg></div><div class="stat-info"><h3>${formatNumber(data.total_unit_kerja)}</h3><p>Total Unit Kerja</p></div></div>`;
+
+                // Dynamic stats from columns -> Only show summable columns?
+                // Limit to 4 cards max? Or scroll?
+                // Let's show all summable columns
+                const colors = ['purple',
+                    'green',
+                    'orange',
+                    'red'];
+                let colorIdx = 0;
+
+                for (const [key, val] of Object.entries(data.column_stats)) {
+                    // Find display name
+                    const colDef = currentTableDef.columns.find(c => c.name === key);
+                    if (!colDef) continue;
+
+                    html += `<div class="stat-card"><div class="stat-icon ${colors[colorIdx % colors.length]}"><svg viewBox="0 0 24 24"><path d="M19 3H4.99c-1.11 0-1.98.89-1.98 2L3 19c0 1.1.88 2 1.99 2H19c1.1 0 2-.9 2-2V5c0-1.11-.9-2-2-2zm0 12h-4c0 1.66-1.35 3-3 3s-3-1.34-3-3H4.99V5H19v10z" /></svg></div><div class="stat-info"><h3>${formatNumber(val)}</h3><p>${colDef.display_name}</p></div></div>`;
+                    colorIdx++;
+                }
+
+                statsContainer.innerHTML = html;
+
+            }
+
+            catch (e) {
+                console.error('Error loading stats:', e);
+                const statsContainer = document.getElementById('stats-container');
+
+                if (statsContainer) {
+                    statsContainer.innerHTML = `<div class="stat-card" style="border-left: 5px solid #f44336;"><div class="stat-info"><h3 style="font-size: 16px; color: #d32f2f;">Gagal memuat statistik</h3><p>Coba refresh halaman</p></div></div>`;
+                }
+            }
         }
 
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+            // Find tab element by onclick attribute (simple hack) or add IDs to tabs
+            const tabs = document.querySelectorAll('.tab');
+            if (tabId === 'tab-data') tabs[0].classList.add('active');
+            if (tabId === 'tab-instansi') tabs[1].classList.add('active');
+            if (tabId === 'tab-unit') tabs[2].classList.add('active');
+
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        // Helper to load instansi list for inputs
         async function loadInstansiList() {
             try {
-                const res = await fetch(`${API_BASE}/instansi?limit=500`);
+                const res = await fetch(`${API_BASE}/instansi`);
                 const result = await res.json();
-                const options = result.data.map(i => `<option value="${i.id}">${i.nama}</option>`).join('');
-                document.getElementById('unit-instansi').innerHTML = '<option value="">-- Pilih Instansi --</option>' + options;
-
-                // Populate datalist for search
                 window.instansiData = result.data;
-                const datalistOptions = result.data.map(i => `<option value="${i.nama}" data-id="${i.id}">`).join('');
-                document.getElementById('instansi-list').innerHTML = datalistOptions;
-            } catch (e) { console.error('Error loading instansi:', e); }
+                const options = result.data.map(i => `<option value="${i.nama}" >`).join('');
+                document.getElementById('instansi-list').innerHTML = options;
+                document.getElementById('instansi-list-input').innerHTML = options;
+                document.getElementById('instansi-list-unit').innerHTML = options;
+            }
+
+            catch (e) {
+                console.error(e);
+            }
         }
 
-        async function loadUnitKerjaList() {
-            try {
-                const res = await fetch(`${API_BASE}/unit-kerja?limit=500`);
-                const result = await res.json();
-                const options = result.data.map(u => `<option value="${u.id}">${u.instansi ? u.instansi.nama + ' - ' : ''}${u.nama}</option>`).join('');
-                document.getElementById('data-unit').innerHTML = '<option value="">-- Pilih Unit Kerja --</option>' + options;
+        function filterUnitKerjaInput(instansiName) {
+            const instansi = window.instansiData?.find(i => i.nama === instansiName);
+            const unitSelect = document.getElementById('data-unit');
 
-                // Store for search
-                window.unitKerjaData = result.data;
-                updateUnitKerjaDatalist(result.data);
-            } catch (e) { console.error('Error loading unit kerja:', e); }
-        }
-
-        function updateUnitKerjaDatalist(data) {
-            const datalistOptions = data.map(u => {
-                const label = u.instansi ? `${u.instansi.nama} - ${u.nama}` : u.nama;
-                return `<option value="${label}" data-id="${u.id}">`;
-            }).join('');
-            document.getElementById('unit-kerja-list').innerHTML = datalistOptions;
-        }
-
-        function handleInstansiFilter(value) {
-            const instansi = window.instansiData?.find(i => i.nama === value);
-            document.getElementById('filter-instansi').value = instansi ? instansi.id : '';
-
-            // Update unit kerja datalist based on instansi
             if (instansi) {
-                loadUnitKerjaByInstansi(instansi.id);
-            } else {
-                updateUnitKerjaDatalist(window.unitKerjaData || []);
+                unitSelect.disabled = false;
+                unitSelect.innerHTML = '<option value="">Memuat...</option>';
+                // Load units
+                loadUnitsForSelect(instansi.id, 'data-unit');
+            }
+
+            else {
+                unitSelect.disabled = true;
+                unitSelect.innerHTML = '<option value="">Pilih Instansi Terlebih Dahulu</option>';
             }
         }
 
-        async function loadUnitKerjaByInstansi(instansiId) {
+        async function loadUnitsForSelect(instansiId, selectId) {
             try {
-                const res = await fetch(`${API_BASE}/instansi/${instansiId}/unit-kerja?limit=500`);
+                const res = await fetch(`${API_BASE}/unit-kerja?instansi_id=${instansiId}`);
                 const result = await res.json();
-                updateUnitKerjaDatalist(result.data.map(u => ({ ...u, instansi: null })));
-            } catch (e) { console.error('Error loading unit kerja by instansi:', e); }
-        }
+                const select = document.getElementById(selectId);
 
-        async function loadUnitKerjaFilter() {
-            const instansiId = document.getElementById('filter-instansi').value;
-            if (!instansiId) {
-                updateUnitKerjaDatalist(window.unitKerjaData || []);
-                return;
+                select.innerHTML = result.data.map(u => `<option value="${u.id}" >${u.nama}</option>`).join('');
             }
-            await loadUnitKerjaByInstansi(instansiId);
+
+            catch (e) {
+                console.error(e);
+            }
         }
 
-        function resetFilter() {
-            document.getElementById('filter-instansi-input').value = '';
-            document.getElementById('filter-instansi').value = '';
-            document.getElementById('filter-unit-kerja-input').value = '';
-            document.getElementById('filter-unit-kerja').value = '';
-            document.getElementById('filter-tanggal').value = '';
-            updateUnitKerjaDatalist(window.unitKerjaData || []);
-            loadData();
+        // Unit Kerja Tab handling
+        document.getElementById('unit-instansi-search').addEventListener('change', (e) => {
+            const instansi = window.instansiData?.find(i => i.nama === e.target.value);
+            if (instansi) document.getElementById('unit-instansi').value = instansi.id;
+        });
+
+        // Dynamic Form Render
+        function renderEntryForm() {
+            const container = document.getElementById('dynamic-inputs');
+            if (!container || !currentTableDef) return;
+
+            let html = '';
+
+            currentTableDef.columns.forEach(col => {
+                html += `<div class="form-group" > <label>${col.display_name} ${col.is_required ? '<span style="color:red">*</span>' : ''}</label> <input type="${col.data_type === 'integer' ? 'number' : 'text'}"
+                    class="form-control dynamic-input"
+                    data-name="${col.name}"
+
+                    ${col.is_required ? 'required' : ''}
+
+                    placeholder="Masukkan ${col.display_name}" > </div> `;
+            });
+            container.innerHTML = html;
         }
+
+        // Keep helper functions like loadInstansiList, etc. defined previously
+        // Redefine loadData to use dynamic table API
 
         async function loadData(page = 1) {
+            if (!currentTableId) return;
+
             currentPage = page;
             const offset = (page - 1) * pageSize;
             const instansiId = document.getElementById('filter-instansi').value;
 
-            // Get unit kerja ID from text input
             const unitKerjaInput = document.getElementById('filter-unit-kerja-input').value;
             let unitKerjaId = '';
+
             if (unitKerjaInput && window.unitKerjaData) {
                 const unit = window.unitKerjaData.find(u => {
                     const label = u.instansi ? `${u.instansi.nama} - ${u.nama}` : u.nama;
@@ -767,9 +1043,12 @@
 
             const tanggal = document.getElementById('filter-tanggal').value;
 
-            let url = `${API_BASE}/data-arsip?limit=${pageSize}&offset=${offset}`;
+            let url = `${API_BASE}/tables/${currentTableId}/data?limit=${pageSize}&offset=${offset}`;
+
             if (instansiId) url += `&instansi_id=${instansiId}`;
+
             if (unitKerjaId) url += `&unit_kerja_id=${unitKerjaId}`;
+
             if (tanggal) url += `&tanggal_start=${tanggal}&tanggal_end=${tanggal}`;
 
             try {
@@ -778,37 +1057,247 @@
                 const tbody = document.getElementById('data-table');
 
                 if (result.data.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Tidak ada data</td></tr>';
-                } else {
-                    tbody.innerHTML = result.data.map(d => `
-                        <tr>
-                            <td>${d.unit_kerja?.instansi?.nama || '-'}</td>
-                            <td>${d.unit_kerja?.nama || '-'}</td>
-                            <td>${formatDate(d.tanggal)}</td>
-                            <td>${formatNumber(d.naskah_masuk)}</td>
-                            <td>${formatNumber(d.naskah_keluar)}</td>
-                            <td>${formatNumber(d.disposisi)}</td>
-                            <td>${formatNumber(d.berkas)}</td>
-                            <td><strong>${formatNumber(d.total)}</strong></td>
-                        </tr>
-                    `).join('');
+                    const colspan = 3 + currentTableDef.columns.length + 1;
+                    tbody.innerHTML = `<tr><td colspan="${colspan}" class="empty-state">Tidak ada data</td></tr>`;
                 }
+
+                else {
+                    tbody.innerHTML = result.data.map(d => {
+                        const rowData = d.data || {};
+
+                        const colCells = currentTableDef.columns.map(c => `<td>${formatNumber(rowData[c.name])}</td>`).join('');
+                        const hasSummable = currentTableDef.columns.some(c => c.is_summable);
+
+                        const totalCell = hasSummable ? `<td><strong>${formatNumber(d.total)}</strong></td>` : '';
+
+                        return `<tr> <td>${d.unit_kerja?.instansi?.nama || '-'}</td> <td>${d.unit_kerja?.nama || '-'}</td> <td>${formatDate(d.tanggal)}</td> ${colCells} ${totalCell} </tr> `;
+                    }).join('');
+                }
+
                 renderPagination(result.total, page);
-            } catch (e) {
-                document.getElementById('data-table').innerHTML = '<tr><td colspan="8" class="empty-state">Error memuat data</td></tr>';
+            }
+
+            catch (e) {
+                const colspan = currentTableDef ? (3 + currentTableDef.columns.length + 1) : 8;
+
+                document.getElementById('data-table').innerHTML = `<tr><td colspan="${colspan}" class="empty-state">Error memuat data: ${e.message}</td></tr>`;
             }
         }
+
+        /* --- Modal Functions --- */
+        function openModal(id) {
+            document.getElementById(id).style.display = 'block';
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        /* --- Table Management --- */
+        async function manageTables() {
+            openModal('modal-manage-tables');
+            await loadTableListObj();
+        }
+
+        async function loadTableListObj() {
+            const container = document.getElementById('table-list-container');
+            container.innerHTML = '<p class="loading">Memuat daftar tabel...</p>';
+
+            try {
+                const res = await fetch(`${API_BASE}/tables`);
+                const result = await res.json();
+                const tables = result.data;
+
+                if (tables.length === 0) {
+                    container.innerHTML = '<p class="empty-state">Belum ada tabel yang dibuat.</p>';
+                    return;
+                }
+
+                container.innerHTML = tables.map(t => `
+                    <div class="table-list-item">
+                        <div class="table-list-info">
+                            <h4>${t.display_name} ${t.is_default ? '<span class="badge-default">Default</span>' : ''}</h4>
+                            <p>${t.description || "Tidak ada deskripsi"} | ${t.columns.length} Kolom</p>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            ${!t.is_default ? `<button class="btn btn-sm btn-secondary" style="padding: 5px 10px; font-size:12px;" onclick="setDefaultTable(${t.id})">Set Default</button>` : ''}
+                            <button class="btn btn-sm btn-logout" style="padding: 5px 10px; font-size:12px; background: #ff5252;" onclick="deleteTable(${t.id}, '${t.display_name}')">Hapus</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            catch (e) {
+                container.innerHTML = '<p class="error">Gagal memuat tabel.</p>';
+            }
+        }
+
+        function openCreateModal() {
+            closeModal('modal-manage-tables'); // close list
+            document.getElementById('form-create-table').reset();
+            document.getElementById('column-builder').innerHTML = '';
+            // Add default columns? No, let user add.
+            // Add at least one column row
+            addColumnRow();
+            openModal('modal-create-table');
+        }
+
+        function addColumnRow() {
+            const container = document.getElementById('column-builder');
+            const idx = container.children.length;
+            const div = document.createElement('div');
+            div.className = 'column-builder-row';
+            div.innerHTML = ` <input type="text" class="form-control col-name" placeholder="Nama Kolom (Label)" required style="flex: 2;"><select class="form-control col-type" style="flex: 1;"><option value="integer">Angka (Total)</option><option value="string">Teks</option></select><div style="flex: 0 0 80px; display:flex; align-items:center; gap:5px; font-size:12px;"><input type="checkbox" class="col-sum" checked><label>Sum?</label></div><button type="button" class="btn btn-sm btn-logout" onclick="this.parentElement.remove()" style="padding: 2px 8px;">&times;
+            </button>`;
+            container.appendChild(div);
+        }
+
+        async function submitCreateTable() {
+            const displayName = document.getElementById('new-table-display').value;
+
+            if (!displayName) {
+                alert("Nama tabel harus diisi");
+                return;
+            }
+
+            const desc = document.getElementById('new-table-desc').value;
+
+            // Build columns
+            const rows = document.querySelectorAll('.column-builder-row');
+            const columns = [];
+
+            rows.forEach((row, index) => {
+                const label = row.querySelector('.col-name').value;
+                if (!label) return;
+
+                const type = row.querySelector('.col-type').value;
+                const isSum = row.querySelector('.col-sum').checked;
+
+                // Simple slugify for internal name
+                const name = label.toLowerCase().replace(/[^a-z0-9]/g, '_');
+
+                columns.push({
+                    name: name, // Removed random suffix
+                    display_name: label,
+                    data_type: type,
+                    is_summable: isSum,
+                    order: index
+                });
+            });
+
+            if (columns.length === 0) {
+                alert("Minimal satu kolom harus ditambahkan");
+                return;
+            }
+
+            const payload = {
+                name: displayName.toLowerCase().replace(/[^a-z0-9]/g, '_'), // Removed random suffix
+                display_name: displayName,
+                description: desc,
+                columns: columns
+            };
+
+            if (!confirm("Buat tabel baru?")) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/tables`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+
+                    ,
+                    body: JSON.stringify(payload)
+                });
+                const result = await res.json();
+
+                if (res.ok) {
+                    alert("Tabel berhasil dibuat!");
+                    closeModal('modal-create-table');
+                    manageTables(); // Reopen list
+                    loadTables(); // Reload dropdown in dashboard
+                }
+
+                else {
+                    alert("Gagal: " + (result.message || result.detail));
+                }
+            }
+
+            catch (e) {
+                console.error(e);
+                alert("Terjadi kesalahan sistem");
+            }
+        }
+
+        async function deleteTable(id, name) {
+            if (!confirm(`Yakin ingin menghapus tabel "${name}" ?\nSEMUA DATA DI DALAMNYA AKAN HILANG PERMANEN !`)) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/tables/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (res.ok) {
+                    loadTableListObj();
+                    loadTables();
+                }
+
+                else {
+                    const d = await res.json();
+                    alert("Gagal menghapus: " + (d.message || d.detail));
+                }
+            }
+
+            catch (e) {
+                alert("Error koneksi");
+            }
+        }
+
+        async function setDefaultTable(id) {
+            if (!confirm("Set tabel ini sebagai default?")) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/tables/${id}`, {
+
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+
+                    ,
+                    body: JSON.stringify({
+                        is_default: true
+                    })
+                });
+
+                if (res.ok) {
+                    loadTableListObj();
+                    loadTables();
+                }
+            }
+
+            catch (e) {
+                alert("Error koneksi");
+            }
+        }
+
 
         function renderPagination(total, currentPage) {
             const totalPages = Math.ceil(total / pageSize);
             const pagination = document.getElementById('pagination');
-            if (totalPages <= 1) { pagination.innerHTML = ''; return; }
+
+            if (totalPages <= 1) {
+                pagination.innerHTML = '';
+                return;
+            }
 
             let html = '';
             if (currentPage > 1) html += `<button class="page-btn" onclick="loadData(${currentPage - 1})">Prev</button>`;
+
             for (let i = 1; i <= Math.min(totalPages, 5); i++) {
                 html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="loadData(${i})">${i}</button>`;
             }
+
             if (currentPage < totalPages) html += `<button class="page-btn" onclick="loadData(${currentPage + 1})">Next</button>`;
             pagination.innerHTML = html;
         }
@@ -816,34 +1305,51 @@
         document.getElementById('form-instansi').addEventListener('submit', async (e) => {
             e.preventDefault();
             const alertBox = document.getElementById('alert-instansi');
+
             try {
                 const res = await fetch(`${API_BASE}/instansi`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+
+                    ,
                     body: JSON.stringify({
                         kode: document.getElementById('instansi-kode').value,
                         nama: document.getElementById('instansi-nama').value
                     })
                 });
                 const result = await res.json();
+
                 if (res.ok) {
                     alertBox.innerHTML = '<div class="alert alert-success">Instansi berhasil disimpan!</div>';
                     e.target.reset();
                     loadStats();
                     loadInstansiList();
-                } else {
-                    alertBox.innerHTML = `<div class="alert alert-error">${result.detail || 'Gagal menyimpan'}</div>`;
                 }
-            } catch (error) { alertBox.innerHTML = '<div class="alert alert-error">Terjadi kesalahan</div>'; }
+
+                else {
+                    alertBox.innerHTML = `<div class="alert alert-error" >${result.detail || 'Gagal menyimpan'}</div>`;
+                }
+            }
+
+            catch (error) {
+                alertBox.innerHTML = '<div class="alert alert-error">Terjadi kesalahan</div>';
+            }
         });
 
         document.getElementById('form-unit').addEventListener('submit', async (e) => {
             e.preventDefault();
             const alertBox = document.getElementById('alert-unit');
+
             try {
                 const res = await fetch(`${API_BASE}/unit-kerja`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+
+                    ,
                     body: JSON.stringify({
                         instansi_id: parseInt(document.getElementById('unit-instansi').value),
                         kode: document.getElementById('unit-kode').value,
@@ -851,48 +1357,75 @@
                     })
                 });
                 const result = await res.json();
+
                 if (res.ok) {
                     alertBox.innerHTML = '<div class="alert alert-success">Unit Kerja berhasil disimpan!</div>';
                     e.target.reset();
                     loadStats();
                     loadUnitKerjaList();
-                } else {
-                    alertBox.innerHTML = `<div class="alert alert-error">${result.detail || 'Gagal menyimpan'}</div>`;
                 }
-            } catch (error) { alertBox.innerHTML = '<div class="alert alert-error">Terjadi kesalahan</div>'; }
+
+                else {
+                    alertBox.innerHTML = `<div class="alert alert-error" >${result.detail || 'Gagal menyimpan'}</div>`;
+                }
+            }
+
+            catch (error) {
+                alertBox.innerHTML = '<div class="alert alert-error">Terjadi kesalahan</div>';
+            }
         });
 
         document.getElementById('form-data').addEventListener('submit', async (e) => {
             e.preventDefault();
             const alertBox = document.getElementById('alert-data');
+
+            // Gather dynamic data
+            const dynamicInputs = document.querySelectorAll('.dynamic-input');
+
+            const dataPayload = {};
+
+            dynamicInputs.forEach(input => {
+                const name = input.getAttribute('data-name');
+                const val = input.value;
+                if (val) dataPayload[name] = isNaN(val) ? val : Number(val);
+            });
+
+            const payload = {
+                unit_kerja_id: parseInt(document.getElementById('data-unit').value),
+                tanggal: document.getElementById('data-tanggal').value,
+                data: dataPayload
+            };
+
             try {
-                const res = await fetch(`${API_BASE}/data-arsip`, {
+                const res = await fetch(`${API_BASE}/tables/${currentTableId}/data`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        unit_kerja_id: parseInt(document.getElementById('data-unit').value),
-                        tanggal: document.getElementById('data-tanggal').value,
-                        naskah_masuk: parseInt(document.getElementById('data-naskah-masuk').value) || 0,
-                        naskah_keluar: parseInt(document.getElementById('data-naskah-keluar').value) || 0,
-                        disposisi: parseInt(document.getElementById('data-disposisi').value) || 0,
-                        berkas: parseInt(document.getElementById('data-berkas').value) || 0,
-                        retensi_permanen: parseInt(document.getElementById('data-retensi-permanen').value) || 0,
-                        retensi_musnah: parseInt(document.getElementById('data-retensi-musnah').value) || 0,
-                        naskah_ditindaklanjuti: parseInt(document.getElementById('data-naskah-ditindaklanjuti').value) || 0
-                    })
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+
+                    ,
+                    body: JSON.stringify(payload)
                 });
+
                 const result = await res.json();
+
                 if (res.ok) {
                     alertBox.innerHTML = '<div class="alert alert-success">Data berhasil disimpan!</div>';
-                    ['naskah-masuk', 'naskah-keluar', 'disposisi', 'berkas', 'retensi-permanen', 'retensi-musnah', 'naskah-ditindaklanjuti'].forEach(f => {
-                        document.getElementById('data-' + f).value = 0;
-                    });
+                    // Reset inputs but keep unit/tanggal? Maybe just reset dynamic inputs
+                    dynamicInputs.forEach(input => input.value = '');
                     loadStats();
-                    loadData();
-                } else {
-                    alertBox.innerHTML = `<div class="alert alert-error">${result.detail || 'Gagal menyimpan'}</div>`;
+                    loadData(1);
                 }
-            } catch (error) { alertBox.innerHTML = '<div class="alert alert-error">Terjadi kesalahan</div>'; }
+
+                else {
+                    alertBox.innerHTML = `<div class="alert alert-error" >${result.detail || 'Gagal menyimpan'}</div>`;
+                }
+            }
+
+            catch (error) {
+                console.error(error);
+                alertBox.innerHTML = '<div class="alert alert-error">Terjadi kesalahan koneksi</div>';
+            }
         });
 
         function logout() {
@@ -901,11 +1434,18 @@
             window.location.href = '/login';
         }
 
-        function formatNumber(num) { return (num || 0).toLocaleString('id-ID'); }
+        function formatNumber(num) {
+            return (num || 0).toLocaleString('id-ID');
+        }
+
         function formatDate(dateStr) {
             if (!dateStr) return '-';
-            return new Date(dateStr).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+
+            return new Date(dateStr).toLocaleDateString('id-ID', {
+                day: '2-digit', month: 'short', year: 'numeric'
+            });
         }
+
     </script>
 </body>
 

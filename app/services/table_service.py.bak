@@ -1,0 +1,247 @@
+"""
+Service untuk mengelola definisi tabel dinamis
+"""
+from typing import Dict, Any, List, Optional
+from datetime import date
+from sqlalchemy.orm import joinedload
+from app.database import get_db_context
+from app.models.table_models import TableDefinition, ColumnDefinition, DynamicData
+from app.models.arsip_models import UnitKerja
+
+class TableService:
+    """Service untuk operasi CRUD pada definisi tabel"""
+    
+    def get_all_tables(self) -> List[Dict]:
+        """Get all table definitions"""
+        with get_db_context() as db:
+            tables = db.query(TableDefinition).order_by(TableDefinition.id).all()
+            return [t.to_dict(include_columns=True) for t in tables]
+    
+    def get_table_by_id(self, table_id: int) -> Optional[Dict]:
+        """Get table definition by ID"""
+        with get_db_context() as db:
+            table = db.query(TableDefinition).options(
+                joinedload(TableDefinition.columns)
+            ).filter(TableDefinition.id == table_id).first()
+            
+            if table:
+                return table.to_dict(include_columns=True)
+            return None
+            
+    def get_default_table(self) -> Optional[Dict]:
+        """Get the default table definition"""
+        with get_db_context() as db:
+            table = db.query(TableDefinition).options(
+                joinedload(TableDefinition.columns)
+            ).filter(TableDefinition.is_default == True).first()
+            
+            if table:
+                return table.to_dict(include_columns=True)
+                
+            # If no default set, return the first one
+            table = db.query(TableDefinition).options(
+                joinedload(TableDefinition.columns)
+            ).first()
+            if table:
+                return table.to_dict(include_columns=True)
+            return None
+    
+    def create_table(self, name: str, display_name: str, description: str = None, columns: List[Dict] = []) -> Dict[str, Any]:
+        """Create new table definition with columns"""
+        with get_db_context() as db:
+            try:
+                # Check duplicate name
+                existing = db.query(TableDefinition).filter(TableDefinition.name == name).first()
+                if existing:
+                    return {"status": "error", "message": f"Tabel dengan nama internal '{name}' sudah ada"}
+                
+                # Create table
+                # Check if this is the first table, make it default
+                count = db.query(TableDefinition).count()
+                is_default = (count == 0)
+                
+                table = TableDefinition(
+                    name=name,
+                    display_name=display_name,
+                    description=description,
+                    is_default=is_default
+                )
+                db.add(table)
+                db.flush() # Get ID
+                
+                # Add columns
+                for i, col in enumerate(columns):
+                    column = ColumnDefinition(
+                        table_id=table.id,
+                        name=col['name'],
+                        display_name=col['display_name'],
+                        data_type=col.get('data_type', 'integer'),
+                        is_required=col.get('is_required', False),
+                        is_summable=col.get('is_summable', True),
+                        order=i
+                    )
+                    db.add(column)
+                
+                db.commit()
+                db.refresh(table)
+                return {"status": "success", "data": table.to_dict(include_columns=True)}
+            except Exception as e:
+                db.rollback()
+                return {"status": "error", "message": str(e)}
+    
+    def update_table(self, table_id: int, display_name: str = None, description: str = None, is_default: bool = None) -> Dict[str, Any]:
+        """Update table definition"""
+        with get_db_context() as db:
+            try:
+                table = db.query(TableDefinition).filter(TableDefinition.id == table_id).first()
+                if not table:
+                    return {"status": "error", "message": "Tabel tidak ditemukan"}
+                
+                if display_name:
+                    table.display_name = display_name
+                if description is not None:
+                    table.description = description
+                
+                if is_default and not table.is_default:
+                    # Unset other default
+                    db.query(TableDefinition).update({TableDefinition.is_default: False})
+                    table.is_default = True
+                
+                db.commit()
+                db.refresh(table)
+                return {"status": "success", "data": table.to_dict()}
+            except Exception as e:
+                db.rollback()
+                return {"status": "error", "message": str(e)}
+
+    def delete_table(self, table_id: int) -> Dict[str, Any]:
+        """Delete table definition and all its data"""
+        with get_db_context() as db:
+            try:
+                table = db.query(TableDefinition).filter(TableDefinition.id == table_id).first()
+                if not table:
+                    return {"status": "error", "message": "Tabel tidak ditemukan"}
+                
+                # if table.is_default:
+                #     return {"status": "error", "message": "Tidak dapat menghapus tabel default"}
+
+                db.delete(table)
+                db.commit()
+                return {"status": "success", "message": f"Tabel {table.display_name} berhasil dihapus"}
+            except Exception as e:
+                db.rollback()
+                return {"status": "error", "message": str(e)}
+    
+    def get_dynamic_data(self, table_id: int, instansi_id: int = None, unit_kerja_id: int = None, 
+                        tanggal_start=None, tanggal_end=None, limit=50, offset=0) -> Dict[str, Any]:
+        """Get dynamic data with filters"""
+        with get_db_context() as db:
+            query = db.query(DynamicData).options(
+                joinedload(DynamicData.unit_kerja).joinedload(UnitKerja.instansi)
+            ).filter(DynamicData.table_id == table_id)
+            
+            if unit_kerja_id:
+                query = query.filter(DynamicData.unit_kerja_id == unit_kerja_id)
+            
+            if instansi_id:
+                query = query.join(UnitKerja).filter(UnitKerja.instansi_id == instansi_id)
+            
+            if tanggal_start:
+                query = query.filter(DynamicData.tanggal >= tanggal_start)
+            
+            if tanggal_end:
+                query = query.filter(DynamicData.tanggal <= tanggal_end)
+            
+            total = query.count()
+            data = query.order_by(DynamicData.tanggal.desc()).offset(offset).limit(limit).all()
+            
+            return {
+                "data": [d.to_dict(include_unit_kerja=True) for d in data],
+                "total": total,
+                "limit": limit,
+                "offset": offset
+            }
+
+    def get_statistics(self, table_id: int) -> Dict[str, Any]:
+        """Get statistics for a specific table"""
+        with get_db_context() as db:
+            # Get table info and summable columns
+            table = db.query(TableDefinition).filter(TableDefinition.id == table_id).first()
+            if not table:
+                return None
+                
+            summable_cols = db.query(ColumnDefinition).filter(
+                ColumnDefinition.table_id == table_id, 
+                ColumnDefinition.is_summable == True
+            ).all()
+            
+            # Base counts
+            # Get unique instansi_id from unit_kerja
+            total_instansi = db.query(DynamicData.unit_kerja_id).join(UnitKerja).with_entities(UnitKerja.instansi_id).distinct().filter(
+                DynamicData.table_id == table_id
+            ).count()
+            
+            # Get unique unit_kerja_id
+            total_unit_kerja = db.query(DynamicData.unit_kerja_id).filter(
+                DynamicData.table_id == table_id
+            ).distinct().count()
+            
+            # Fetch all data for this table to aggregate
+            all_records = db.query(DynamicData).filter(DynamicData.table_id == table_id).all()
+            
+            # Aggregate in python
+            stats = {col.name: 0 for col in summable_cols}
+            grand_total = 0
+            
+            for record in all_records:
+                grand_total += (record.total or 0)
+                data = record.data or {}
+                for col in summable_cols:
+                    try:
+                        val = int(data.get(col.name, 0) or 0)
+                        stats[col.name] += val
+                    except:
+                        pass
+            
+            return {
+                "total_instansi": total_instansi,
+                "total_unit_kerja": total_unit_kerja,
+                "grand_total": grand_total,
+                "column_stats": stats
+            }
+
+    def create_dynamic_data(self, table_id: int, unit_kerja_id: int, tanggal: date, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a single dynamic data record"""
+        with get_db_context() as db:
+            try:
+                # Calculate total for summable columns
+                summable_cols = db.query(ColumnDefinition).filter(
+                    ColumnDefinition.table_id == table_id, 
+                    ColumnDefinition.is_summable == True
+                ).all()
+                
+                total = 0
+                for col in summable_cols:
+                    if col.name in data:
+                        try:
+                            val = int(data[col.name])
+                            total += val
+                        except:
+                            pass
+                            
+                record = DynamicData(
+                    table_id=table_id,
+                    unit_kerja_id=unit_kerja_id,
+                    tanggal=tanggal,
+                    data=data,
+                    total=total
+                )
+                db.add(record)
+                db.commit()
+                db.refresh(record)
+                return {"status": "success", "data": record.to_dict()}
+            except Exception as e:
+                db.rollback()
+                return {"status": "error", "message": str(e)}
+
+table_service = TableService()

@@ -1,34 +1,22 @@
 """
-Service untuk upload dan proses file Excel/CSV
+Service untuk upload dan proses file Excel/CSV dengan dukungan Dynamic Table
 """
 import io
-from datetime import datetime
-from typing import List, Dict, Any, Tuple
+from datetime import datetime, date
+from typing import List, Dict, Any, Tuple, Optional
 import pandas as pd
-from sqlalchemy.orm import Session
-from app.models.arsip_models import Instansi, UnitKerja, DataArsip
-
+from sqlalchemy.orm import Session, joinedload
+from app.models.arsip_models import Instansi, UnitKerja 
+from app.models.table_models import TableDefinition, ColumnDefinition, DynamicData
+from app.services.table_service import table_service
 
 class UploadService:
     """Service untuk handle upload file Excel/CSV"""
-    
-    REQUIRED_COLUMNS = [
-        'tanggal', 'unit_kerja', 'naskah_masuk', 'naskah_keluar', 
-        'disposisi', 'berkas', 'retensi_permanen', 'retensi_musnah', 
-        'naskah_ditindaklanjuti'
-    ]
     
     COLUMN_ALIASES = {
         'tanggal': ['tanggal', 'date', 'tgl'],
         'unit_kerja': ['unit_kerja', 'unit kerja', 'unit', 'nama_unit', 'nama unit'],
         'instansi': ['instansi', 'nama_instansi', 'nama instansi'],
-        'naskah_masuk': ['naskah_masuk', 'naskah masuk', 'masuk', 'incoming'],
-        'naskah_keluar': ['naskah_keluar', 'naskah keluar', 'keluar', 'outgoing'],
-        'disposisi': ['disposisi', 'disposition'],
-        'berkas': ['berkas', 'files', 'file'],
-        'retensi_permanen': ['retensi_permanen', 'retensi permanen', 'permanen', 'permanent'],
-        'retensi_musnah': ['retensi_musnah', 'retensi musnah', 'musnah', 'destroy'],
-        'naskah_ditindaklanjuti': ['naskah_ditindaklanjuti', 'naskah ditindaklanjuti', 'ditindaklanjuti', 'followed_up'],
     }
     
     def __init__(self, db: Session):
@@ -60,18 +48,19 @@ class UploadService:
             else:
                 return None, "Format file tidak didukung. Gunakan .csv, .xlsx, atau .xls"
             
-            # Normalize column names
+            # Normalize standard columns
             df.columns = [self.normalize_column_name(col) for col in df.columns]
             
             return df, None
         except Exception as e:
             return None, f"Error membaca file: {str(e)}"
     
-    def validate_data(self, df: pd.DataFrame) -> Tuple[bool, List[str]]:
-        """Validate dataframe columns and data"""
+    def validate_data(self, df: pd.DataFrame, table_def: Dict) -> Tuple[bool, List[str]]:
+        """Validate dataframe columns and data against table definition"""
         errors = []
+        columns = table_def['columns']
         
-        # Check required columns
+        # Check required system columns
         missing_cols = []
         for col in ['tanggal', 'instansi', 'unit_kerja']:
             if col not in df.columns:
@@ -80,13 +69,29 @@ class UploadService:
         if missing_cols:
             errors.append(f"Kolom wajib tidak ditemukan: {', '.join(missing_cols)}")
         
-        # Check if at least one data column exists
-        data_cols = ['naskah_masuk', 'naskah_keluar', 'disposisi', 'berkas', 
-                     'retensi_permanen', 'retensi_musnah', 'naskah_ditindaklanjuti']
-        has_data_col = any(col in df.columns for col in data_cols)
-        if not has_data_col:
-            errors.append("Minimal satu kolom data harus ada (naskah_masuk, naskah_keluar, dll)")
+        # Check table specific columns
+        # Map display names or aliases to internal names?
+        # For now assume user provides headers matching internal names OR display names
         
+        # Create mapping of possible headers -> internal_name
+        col_mapping = {}
+        for col in columns:
+            col_mapping[col['name'].lower()] = col['name']
+            col_mapping[col['display_name'].lower()] = col['name']
+            # Add underscore version of display name
+            col_mapping[col['display_name'].lower().replace(' ', '_')] = col['name']
+        
+        # Check if at least one data column exists in the file
+        found_data_cols = 0
+        for file_col in df.columns:
+            if file_col.lower() in col_mapping:
+                # Rename column in DF to internal name
+                df.rename(columns={file_col: col_mapping[file_col.lower()]}, inplace=True)
+                found_data_cols += 1
+        
+        if found_data_cols == 0:
+             errors.append("File tidak memiliki kolom data yang sesuai dengan template tabel ini")
+
         # Check for empty dataframe
         if len(df) == 0:
             errors.append("File tidak memiliki data")
@@ -131,13 +136,15 @@ class UploadService:
             self.db.flush()
         return unit
     
-    def parse_date(self, date_val) -> datetime.date:
+    def parse_date(self, date_val) -> date:
         """Parse date from various formats"""
         if pd.isna(date_val):
             return None
         
-        if isinstance(date_val, datetime):
-            return date_val.date()
+        if isinstance(date_val, (datetime, date)):
+             if isinstance(date_val, datetime):
+                 return date_val.date()
+             return date_val
         
         if isinstance(date_val, str):
             # Try various date formats
@@ -150,21 +157,25 @@ class UploadService:
         
         # Try pandas to_datetime
         try:
-            return pd.to_datetime(date_val).date()
+            val = pd.to_datetime(date_val)
+            if pd.isna(val): return None
+            return val.date()
         except:
             return None
     
-    def safe_int(self, val) -> int:
-        """Safely convert value to int"""
-        if pd.isna(val):
-            return 0
+    def safe_value(self, val, data_type='integer'):
+        """Safely convert value based on type"""
+        if pd.isna(val) or val == '':
+            return 0 if data_type == 'integer' else ''
         try:
-            return int(float(val))
+            if data_type == 'integer':
+                return int(float(val))
+            return str(val)
         except (ValueError, TypeError):
-            return 0
+            return 0 if data_type == 'integer' else str(val)
     
-    def process_upload(self, file_content: bytes, filename: str) -> Dict[str, Any]:
-        """Process uploaded file and insert data"""
+    def process_upload(self, file_content: bytes, filename: str, table_id: Optional[int] = None) -> Dict[str, Any]:
+        """Process uploaded file and insert to DynamicData"""
         result = {
             "success": False,
             "message": "",
@@ -177,6 +188,20 @@ class UploadService:
             }
         }
         
+        # Get table definition
+        if table_id:
+            table_def = table_service.get_table_by_id(table_id)
+        else:
+            table_def = table_service.get_default_table()
+            
+        if not table_def:
+            result["message"] = "Definisi tabel tidak ditemukan"
+            return result
+            
+        table_id = table_def['id']
+        columns = table_def['columns']
+        summable_cols = self.db.query(ColumnDefinition).filter(ColumnDefinition.table_id == table_id).all()
+        
         # Parse file
         df, error = self.parse_file(file_content, filename)
         if error:
@@ -184,16 +209,13 @@ class UploadService:
             return result
         
         # Validate
-        valid, errors = self.validate_data(df)
+        valid, errors = self.validate_data(df, table_def)
         if not valid:
             result["message"] = "Validasi gagal"
             result["stats"]["errors"] = errors
             return result
         
         result["stats"]["total_rows"] = len(df)
-        
-        # Get default instansi (ANRI)
-        default_instansi = self.get_or_create_instansi("Arsip Nasional Republik Indonesia")
         
         # Process each row
         for idx, row in df.iterrows():
@@ -222,38 +244,32 @@ class UploadService:
                     result["stats"]["errors"].append(f"Baris {idx+2}: tanggal tidak valid")
                     continue
                 
-                # Check existing data
-                existing = self.db.query(DataArsip).filter(
-                    DataArsip.unit_kerja_id == unit.id,
-                    DataArsip.tanggal == tanggal
-                ).first()
+                # Build JSON data
+                json_data = {}
+                for col in columns:
+                    name = col['name']
+                    # Look for column in row (already normalized in validate)
+                    if name in df.columns:
+                        json_data[name] = self.safe_value(row.get(name), col['data_type'])
+                    else:
+                         json_data[name] = 0 if col['data_type'] == 'integer' else ''
                 
-                data_values = {
-                    "naskah_masuk": self.safe_int(row.get('naskah_masuk', 0)),
-                    "naskah_keluar": self.safe_int(row.get('naskah_keluar', 0)),
-                    "disposisi": self.safe_int(row.get('disposisi', 0)),
-                    "berkas": self.safe_int(row.get('berkas', 0)),
-                    "retensi_permanen": self.safe_int(row.get('retensi_permanen', 0)),
-                    "retensi_musnah": self.safe_int(row.get('retensi_musnah', 0)),
-                    "naskah_ditindaklanjuti": self.safe_int(row.get('naskah_ditindaklanjuti', 0)),
-                }
+                # Call TableService to Upsert (Insert/Sum) into Physical Table
+                upsert_res = table_service.upsert_data(
+                    table_id=table_id,
+                    unit_kerja_id=unit.id,
+                    tanggal=tanggal,
+                    data=json_data
+                )
                 
-                if existing:
-                    # Update existing
-                    for key, val in data_values.items():
-                        setattr(existing, key, val)
-                    existing.calculate_total()
-                    result["stats"]["updated"] += 1
+                if upsert_res["status"] == "success":
+                    if upsert_res["action"] == "inserted":
+                        result["stats"]["inserted"] += 1
+                    else:
+                        result["stats"]["updated"] += 1
                 else:
-                    # Insert new
-                    data = DataArsip(
-                        unit_kerja_id=unit.id,
-                        tanggal=tanggal,
-                        **data_values
-                    )
-                    data.calculate_total()
-                    self.db.add(data)
-                    result["stats"]["inserted"] += 1
+                    result["stats"]["skipped"] += 1
+                    result["stats"]["errors"].append(f"Baris {idx+2}: {upsert_res['message']}")
                     
             except Exception as e:
                 result["stats"]["skipped"] += 1
@@ -269,10 +285,3 @@ class UploadService:
             result["message"] = f"Error saat menyimpan: {str(e)}"
         
         return result
-    
-    def get_template_columns(self) -> List[str]:
-        """Get template column names"""
-        return [
-            'tanggal', 'instansi', 'unit_kerja', 'naskah_masuk', 'naskah_keluar',
-            'disposisi', 'berkas', 'retensi_permanen', 'retensi_musnah', 'naskah_ditindaklanjuti'
-        ]

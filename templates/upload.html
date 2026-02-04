@@ -451,11 +451,19 @@
 
         <div class="card">
             <div class="card-title">
-                <svg viewBox="0 0 24 24">
-                    <path
-                        d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z" />
-                </svg>
-                Upload File
+                <div style="flex:1; display:flex; align-items:center; gap:10px;">
+                    <svg viewBox="0 0 24 24">
+                        <path
+                            d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z" />
+                    </svg>
+                    Upload File
+                </div>
+                <!-- Table Selector -->
+                <select id="table-selector"
+                    style="padding: 8px; border-radius: 6px; border: 1px solid #ddd; font-family: inherit; font-size: 14px;"
+                    onchange="handleTableChange()">
+                    <option value="">Loading tables...</option>
+                </select>
             </div>
 
             <div class="upload-zone" id="dropZone">
@@ -511,14 +519,14 @@
                 <div class="template-title">📥 Download Template</div>
                 <p class="template-desc">Gunakan template ini untuk memastikan format data Anda sesuai</p>
                 <div class="template-btns">
-                    <a href="/api/upload/template" class="template-btn">
+                    <a href="#" id="link-template-excel" class="template-btn">
                         <svg viewBox="0 0 24 24" fill="currentColor">
                             <path
                                 d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11zM8 15h8v2H8v-2zm0-4h8v2H8v-2z" />
                         </svg>
                         Download Template Excel
                     </a>
-                    <a href="/api/upload/template/csv" class="template-btn">
+                    <a href="#" id="link-template-csv" class="template-btn">
                         <svg viewBox="0 0 24 24" fill="currentColor">
                             <path
                                 d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z" />
@@ -546,57 +554,8 @@
                             <th>Keterangan</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr>
-                            <td><code>tanggal</code></td>
-                            <td><span class="badge badge-required">Wajib</span></td>
-                            <td>Tanggal data (format: YYYY-MM-DD atau DD/MM/YYYY)</td>
-                        </tr>
-                        <tr>
-                            <td><code>unit_kerja</code></td>
-                            <td><span class="badge badge-required">Wajib</span></td>
-                            <td>Nama unit kerja</td>
-                        </tr>
-                        <tr>
-                            <td><code>instansi</code></td>
-                            <td><span class="badge badge-required">Wajib</span></td>
-                            <td>Nama instansi</td>
-                        </tr>
-                        <tr>
-                            <td><code>naskah_masuk</code></td>
-                            <td><span class="badge badge-optional">Opsional</span></td>
-                            <td>Jumlah naskah masuk</td>
-                        </tr>
-                        <tr>
-                            <td><code>naskah_keluar</code></td>
-                            <td><span class="badge badge-optional">Opsional</span></td>
-                            <td>Jumlah naskah keluar</td>
-                        </tr>
-                        <tr>
-                            <td><code>disposisi</code></td>
-                            <td><span class="badge badge-optional">Opsional</span></td>
-                            <td>Jumlah disposisi</td>
-                        </tr>
-                        <tr>
-                            <td><code>berkas</code></td>
-                            <td><span class="badge badge-optional">Opsional</span></td>
-                            <td>Jumlah berkas</td>
-                        </tr>
-                        <tr>
-                            <td><code>retensi_permanen</code></td>
-                            <td><span class="badge badge-optional">Opsional</span></td>
-                            <td>Jumlah retensi permanen</td>
-                        </tr>
-                        <tr>
-                            <td><code>retensi_musnah</code></td>
-                            <td><span class="badge badge-optional">Opsional</span></td>
-                            <td>Jumlah retensi musnah</td>
-                        </tr>
-                        <tr>
-                            <td><code>naskah_ditindaklanjuti</code></td>
-                            <td><span class="badge badge-optional">Opsional</span></td>
-                            <td>Jumlah naskah ditindaklanjuti</td>
-                        </tr>
+                    <tbody id="columns-body">
+                        <!-- Dynamic content -->
                     </tbody>
                 </table>
             </div>
@@ -617,6 +576,74 @@
         const resultMessage = document.getElementById('resultMessage');
         const resultStats = document.getElementById('resultStats');
         const errorList = document.getElementById('errorList');
+
+        let currentTableDef = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTables();
+        });
+
+        async function loadTables() {
+            try {
+                const res = await fetch('/api/tables');
+                const result = await res.json();
+                const tables = result.data;
+                const selector = document.getElementById('table-selector');
+
+                selector.innerHTML = tables.map(t => `<option value="${t.id}" ${t.is_default ? 'selected' : ''}>${t.display_name}</option>`).join('');
+
+                handleTableChange();
+            } catch (e) { console.error(e); }
+        }
+
+        async function handleTableChange() {
+            const tableId = document.getElementById('table-selector').value;
+            try {
+                const res = await fetch(`/api/tables/${tableId}`);
+                const result = await res.json();
+                currentTableDef = result.data;
+
+                updateTemplateLinks(tableId);
+                updateColumnsInfo(currentTableDef);
+            } catch (e) { }
+        }
+
+        function updateTemplateLinks(tableId) {
+            document.getElementById('link-template-excel').href = `/api/upload/template?table_id=${tableId}`;
+            document.getElementById('link-template-csv').href = `/api/upload/template/csv?table_id=${tableId}`;
+        }
+
+        function updateColumnsInfo(tableDef) {
+            const tbody = document.getElementById('columns-body');
+            let html = `
+                <tr>
+                    <td><code>tanggal</code></td>
+                    <td><span class="badge badge-required">Wajib</span></td>
+                    <td>Tanggal data (YYYY-MM-DD)</td>
+                </tr>
+                <tr>
+                    <td><code>unit_kerja</code></td>
+                    <td><span class="badge badge-required">Wajib</span></td>
+                    <td>Nama unit kerja</td>
+                </tr>
+                <tr>
+                    <td><code>instansi</code></td>
+                    <td><span class="badge badge-required">Wajib</span></td>
+                    <td>Nama instansi</td>
+                </tr>
+            `;
+
+            tableDef.columns.forEach(col => {
+                html += `
+                <tr>
+                    <td><code>${col.name}</code></td>
+                    <td><span class="badge ${col.is_required ? 'badge-required' : 'badge-optional'}">${col.is_required ? 'Wajib' : 'Opsional'}</span></td>
+                    <td>${col.display_name} (${col.data_type})</td>
+                </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
 
         let selectedFile = null;
 
@@ -702,6 +729,7 @@
 
             const formData = new FormData();
             formData.append('file', selectedFile);
+            formData.append('table_id', document.getElementById('table-selector').value);
 
             try {
                 const response = await fetch('/api/upload/file', {
