@@ -434,7 +434,7 @@ class TableService:
                             
                     update_sets.append("total = :total")
                     params["total"] = new_total
-                update_sets.append("updated_at = :now")
+                    update_sets.append("updated_at = :now")
                     params["now"] = datetime.utcnow()
                     
                     sql = f"UPDATE {safe_name} SET {', '.join(update_sets)} WHERE id = :id"
