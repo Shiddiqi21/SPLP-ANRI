@@ -2,7 +2,7 @@
 Service untuk mengelola definisi tabel dinamis (Versi Fisik / Physical Table)
 """
 from typing import Dict, Any, List, Optional
-from datetime import date
+from datetime import date, datetime
 from sqlalchemy import text
 from sqlalchemy.orm import joinedload
 from app.database import get_db_context
