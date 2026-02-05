@@ -595,10 +595,10 @@
                         <form id="form-data">
                             <div class="form-group">
                                 <label>Instansi</label>
-                                <input type="text" class="form-control" id="input-instansi-filter"
-                                    placeholder="Ketik nama instansi..." list="instansi-list-input"
-                                    oninput="filterUnitKerjaInput(this.value)">
-                                <datalist id="instansi-list-input"></datalist>
+                                <select class="form-control" id="input-instansi-filter"
+                                    onchange="filterUnitKerjaSelect(this.value)">
+                                    <option value="">Pilih Instansi...</option>
+                                </select>
                             </div>
                             <div class="form-group">
                                 <label>Unit Kerja</label>
@@ -640,10 +640,9 @@
                         <form id="form-unit">
                             <div class="form-group">
                                 <label>Pilih Instansi</label>
-                                <input type="text" class="form-control" id="unit-instansi-search"
-                                    placeholder="Cari Instansi..." list="instansi-list-unit">
-                                <datalist id="instansi-list-unit"></datalist>
-                                <input type="hidden" id="unit-instansi" required>
+                                <select class="form-control" id="unit-instansi-select" required>
+                                    <option value="">Pilih Instansi...</option>
+                                </select>
                             </div>
                             <div class="form-group">
                                 <label>Kode Unit Kerja</label>
@@ -682,17 +681,15 @@
                 <div class="card-body">
                     <div class="filter-row">
                         <div style="position: relative; flex: 1;">
-                            <input type="text" class="form-control" id="filter-instansi-input"
-                                placeholder="Cari Instansi..." list="instansi-list"
-                                oninput="handleInstansiFilter(this.value)">
-                            <datalist id="instansi-list"></datalist>
-                            <input type="hidden" id="filter-instansi">
+                            <select class="form-control" id="filter-instansi-input">
+                                <option value="">Semua Instansi</option>
+                            </select>
+                            <!-- Removed datalist/hidden inputs -->
                         </div>
                         <div style="position: relative; flex: 1;">
-                            <input type="text" class="form-control" id="filter-unit-kerja-input"
-                                placeholder="Cari Unit Kerja..." list="unit-kerja-list">
-                            <datalist id="unit-kerja-list"></datalist>
-                            <input type="hidden" id="filter-unit-kerja">
+                            <select class="form-control" id="filter-unit-kerja-input">
+                                <option value="">Semua Unit Kerja</option>
+                            </select>
                         </div>
                         <input type="date" class="form-control" id="filter-tanggal">
                         <button class="btn btn-secondary" onclick="loadData()">Filter</button>
@@ -732,6 +729,27 @@
             <div class="modal-footer">
                 <button class="btn btn-primary" onclick="openCreateModal()">+ Buat Tabel Baru</button>
                 <button class="btn btn-secondary" onclick="closeModal('modal-manage-tables')">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail List Modal -->
+    <div id="modal-detail-list" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title" id="detail-list-title">Daftar</span>
+                <button class="close-modal" onclick="closeModal('modal-detail-list')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="table-container" style="max-height: 60vh; overflow-y: auto;">
+                    <table id="detail-table" style="width: 100%; border-collapse: collapse;">
+                        <thead id="detail-table-head" style="background: #f8f9fa; position: sticky; top: 0;"></thead>
+                        <tbody id="detail-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('modal-detail-list')">Tutup</button>
             </div>
         </div>
     </div>
@@ -777,385 +795,690 @@
         let currentPage = 1;
         const pageSize = 20;
         let currentTableId = null;
-        let currentTableDef = null;
 
         document.addEventListener('DOMContentLoaded', () => {
-            const token = localStorage.getItem('access_token');
-
-            if (!token) {
-                window.location.href = '/login';
-                return;
+            // Check session
+            const user = localStorage.getItem('user');
+            if (user) {
+                document.getElementById('username').textContent = JSON.parse(user).username;
+            } else {
+                // If checking token presence is needed:
+                // if(!localStorage.getItem('token')) window.location.href = '/login';
             }
 
-            // Load initial data
-            loadTables();
-            loadInstansiList();
+            // Default date to Today for performance
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('filter-tanggal').value = today;
 
-            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            // Load Tables for selector
+            loadTableList();
 
-            if (user.full_name || user.username) {
-                document.getElementById('username').textContent = user.full_name || user.username;
-            }
+            // Populate Dropdowns
+            populateFilterDropdowns();
+
+            // Restore form listeners
+            const forms = ['form-instansi', 'form-unit', 'form-data'];
+            forms.forEach(fid => {
+                const f = document.getElementById(fid);
+                if (f) f.addEventListener('submit', (e) => handleFormSubmit(e, fid));
+            });
         });
 
-        async function loadTables() {
+        // --- 1. Load Tables ---
+        async function loadTableList() {
+            const selector = document.getElementById('table-selector');
             try {
                 const res = await fetch(`${API_BASE}/tables`);
-                // Handle non-200 responses
-                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                const headers = { 'Authorization': `Bearer ${localStorage.getItem('token')}` }; // If needed
+                // Assuming API is public or cookie based for now as per previous code
 
-                const result = await res.json();
-                const tables = result.data || []; // Ensure array
+                const response = await fetch(`${API_BASE}/tables`);
+                const result = await response.json();
+                const tables = result.data || [];
 
-                const selector = document.getElementById('table-selector');
+                selector.innerHTML = '';
 
-                if (tables.length === 0) {
-                    selector.innerHTML = '<option value="">Tidak ada tabel</option>';
+                let defaultId = null;
 
-                    // Clear Loading States
-                    document.getElementById('stats-container').innerHTML = `
-                        <div class="stat-card">
-                            <div class="stat-info">
-                                <h3>Data Kosong</h3>
-                                <p>Belum ada tabel. Klik "Kelola Tabel" untuk membuat.</p>
-                            </div>
-                        </div>`;
-                    document.getElementById('data-table').innerHTML = '<tr><td colspan="8" class="empty-state" style="text-align:center; padding:20px;">Belum ada tabel yang dibuat.</td></tr>';
-                    document.getElementById('dynamic-inputs').innerHTML = '<p style="text-align:center; color:#999; margin:20px;">Pilih atau buat tabel terlebih dahulu.</p>';
+                tables.forEach(t => {
+                    const opt = document.createElement('option');
+                    opt.value = t.id;
+                    opt.textContent = t.display_name;
+                    opt.style.color = 'black'; // Fix visibility
+                    if (t.is_default) defaultId = t.id;
+                    selector.appendChild(opt);
+                });
+
+                if (tables.length > 0) {
+                    currentTableId = defaultId || tables[0].id;
+                    selector.value = currentTableId;
+                    loadData();
+                    loadStatistics();
+                    loadDynamicInputs(currentTableId);
+                } else {
+                    selector.innerHTML = '<option style="color: black;">Tidak ada tabel</option>';
+                }
+
+            } catch (error) {
+                console.error("Error loading tables:", error);
+                selector.innerHTML = '<option>Error</option>';
+            }
+        }
+
+        async function loadDynamicInputs(tableId) {
+            const container = document.getElementById('dynamic-inputs');
+            if (!container) return;
+            container.innerHTML = '<p class="loading">Memuat kolom data...</p>';
+
+            try {
+                const res = await fetch(`${API_BASE}/tables/${tableId}`);
+                const meta = await res.json();
+
+                if (!res.ok) throw new Error(meta.message || 'Gagal memuat metadata');
+
+                const tableCode = meta.data;
+                const columns = tableCode.columns || [];
+
+                container.innerHTML = '';
+
+                if (columns.length === 0) {
+                    container.innerHTML = '<p><em>Tidak ada kolom custom (Hanya hitung total)</em></p>';
                     return;
                 }
 
-                selector.innerHTML = tables.map(t => `<option value="${t.id}" ${t.is_default ? 'selected' : ''} style="color: #333;">${t.display_name}</option>`).join('');
+                columns.forEach(col => {
+                    const div = document.createElement('div');
+                    div.className = 'form-group';
+                    // Label
+                    const label = document.createElement('label');
+                    label.className = 'form-label';
+                    label.innerHTML = `<strong>${col.display_name}</strong>`;
+                    div.appendChild(label);
 
-                // Set default
-                const defaultTable = tables.find(t => t.is_default) || tables[0];
-                if (defaultTable) {
-                    currentTableId = defaultTable.id;
-                    selector.value = currentTableId; // Ensure selector matches
-                    await handleTableChange(currentTableId);
-                }
-            } catch (e) {
-                console.error("Error loading tables", e);
-                const selector = document.getElementById('table-selector');
-                selector.innerHTML = '<option value="">Gagal memuat</option>';
+                    // Input
+                    let input;
+                    if (col.data_type === 'integer') {
+                        input = document.createElement('input');
+                        input.type = 'number';
+                        input.className = 'form-control dynamic-input';
+                        input.placeholder = `0`;
+                        input.title = `Masukkan angka untuk ${col.display_name}`;
+                    } else {
+                        input = document.createElement('input');
+                        input.type = 'text';
+                        input.className = 'form-control dynamic-input';
+                        input.placeholder = `Isi ${col.display_name}`;
+                    }
+                    input.setAttribute('data-name', col.name);
+                    if (col.is_required) input.required = true;
 
-                // Show error in UI
-                document.getElementById('stats-container').innerHTML = `
-                    <div class="stat-card" style="border-left: 5px solid #f44336;">
-                        <div class="stat-info">
-                            <h3 style="color: #d32f2f;">Gagal Terhubung</h3>
-                            <p>Cek koneksi server api (${e.message})</p>
-                        </div>
-                    </div>`;
-            }
-        }
-
-        async function changeTable() {
-            const tableId = document.getElementById('table-selector').value;
-            await handleTableChange(tableId);
-        }
-
-        async function handleTableChange(tableId) {
-            currentTableId = tableId;
-
-            // Fetch table definition
-            try {
-                const res = await fetch(`${API_BASE}/tables/${tableId}`);
-                const result = await res.json();
-                currentTableDef = result.data;
-
-                // document.getElementById('table-title').textContent = currentTableDef.display_name; // Removed: Selector is now the title
-
-                // 1. Render Headers
-                renderTableHeader();
-
-                // 2. Render Stats
-                loadStats();
-
-                // 3. Load Data
-                loadData(1);
-            }
-
-            catch (e) {
-                console.error("Error changing table", e);
-            }
-        }
-
-        function renderTableHeader() {
-            const thead = document.getElementById('table-head');
-            const columns = ['Instansi',
-                'Unit Kerja',
-                'Tanggal',
-                ...currentTableDef.columns.map(c => c.display_name)];
-            // Optionally add 'Total' if there are summable columns
-            const hasSummable = currentTableDef.columns.some(c => c.is_summable);
-            if (hasSummable) columns.push('Total');
-
-            thead.innerHTML = `<tr>${columns.map(c => `<th>${c}</th>`).join('')}</tr>`;
-
-            // Re-render form whenever table changes
-            renderEntryForm();
-        }
-
-        async function loadStats() {
-            try {
-                const res = await fetch(`${API_BASE}/tables/${currentTableId}/statistics`);
-                const result = await res.json();
-                const data = result.data;
-
-                const statsContainer = document.getElementById('stats-container');
-                let html = '';
-
-                // Static stats for Instansi/Unit
-                html += `<div class="stat-card"><div class="stat-icon red"><svg viewBox="0 0 24 24"><path d="M12 7V3H2v18h20V7H12z" /></svg></div><div class="stat-info"><h3>${formatNumber(data.total_instansi)}</h3><p>Total Instansi</p></div></div><div class="stat-card"><div class="stat-icon blue"><svg viewBox="0 0 24 24"><path d="M3 3v8h8V3H3zm6 6H5V5h4v4zm-6 4v8h8v-8H3zm6 6H5v-4h4v4zm4-16v8h8V3h-8zm6 6h-4V5h4v4zm-6 4v8h8v-8h-8zm6 6h-4v-4h4v4z" /></svg></div><div class="stat-info"><h3>${formatNumber(data.total_unit_kerja)}</h3><p>Total Unit Kerja</p></div></div>`;
-
-                // Dynamic stats from columns -> Only show summable columns?
-                // Limit to 4 cards max? Or scroll?
-                // Let's show all summable columns
-                const colors = ['purple',
-                    'green',
-                    'orange',
-                    'red'];
-                let colorIdx = 0;
-
-                for (const [key, val] of Object.entries(data.column_stats)) {
-                    // Find display name
-                    const colDef = currentTableDef.columns.find(c => c.name === key);
-                    if (!colDef) continue;
-
-                    html += `<div class="stat-card"><div class="stat-icon ${colors[colorIdx % colors.length]}"><svg viewBox="0 0 24 24"><path d="M19 3H4.99c-1.11 0-1.98.89-1.98 2L3 19c0 1.1.88 2 1.99 2H19c1.1 0 2-.9 2-2V5c0-1.11-.9-2-2-2zm0 12h-4c0 1.66-1.35 3-3 3s-3-1.34-3-3H4.99V5H19v10z" /></svg></div><div class="stat-info"><h3>${formatNumber(val)}</h3><p>${colDef.display_name}</p></div></div>`;
-                    colorIdx++;
-                }
-
-                statsContainer.innerHTML = html;
-
-            }
-
-            catch (e) {
-                console.error('Error loading stats:', e);
-                const statsContainer = document.getElementById('stats-container');
-
-                if (statsContainer) {
-                    statsContainer.innerHTML = `<div class="stat-card" style="border-left: 5px solid #f44336;"><div class="stat-info"><h3 style="font-size: 16px; color: #d32f2f;">Gagal memuat statistik</h3><p>Coba refresh halaman</p></div></div>`;
-                }
-            }
-        }
-
-        function switchTab(tabId) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-
-            // Find tab element by onclick attribute (simple hack) or add IDs to tabs
-            const tabs = document.querySelectorAll('.tab');
-            if (tabId === 'tab-data') tabs[0].classList.add('active');
-            if (tabId === 'tab-instansi') tabs[1].classList.add('active');
-            if (tabId === 'tab-unit') tabs[2].classList.add('active');
-
-            document.getElementById(tabId).classList.add('active');
-        }
-
-        // Helper to load instansi list for inputs
-        async function loadInstansiList() {
-            try {
-                const res = await fetch(`${API_BASE}/instansi`);
-                const result = await res.json();
-                window.instansiData = result.data;
-                const options = result.data.map(i => `<option value="${i.nama}" >`).join('');
-                document.getElementById('instansi-list').innerHTML = options;
-                document.getElementById('instansi-list-input').innerHTML = options;
-                document.getElementById('instansi-list-unit').innerHTML = options;
-            }
-
-            catch (e) {
-                console.error(e);
-            }
-        }
-
-        function filterUnitKerjaInput(instansiName) {
-            const instansi = window.instansiData?.find(i => i.nama === instansiName);
-            const unitSelect = document.getElementById('data-unit');
-
-            if (instansi) {
-                unitSelect.disabled = false;
-                unitSelect.innerHTML = '<option value="">Memuat...</option>';
-                // Load units
-                loadUnitsForSelect(instansi.id, 'data-unit');
-            }
-
-            else {
-                unitSelect.disabled = true;
-                unitSelect.innerHTML = '<option value="">Pilih Instansi Terlebih Dahulu</option>';
-            }
-        }
-
-        async function loadUnitsForSelect(instansiId, selectId) {
-            try {
-                const res = await fetch(`${API_BASE}/unit-kerja?instansi_id=${instansiId}`);
-                const result = await res.json();
-                const select = document.getElementById(selectId);
-
-                select.innerHTML = result.data.map(u => `<option value="${u.id}" >${u.nama}</option>`).join('');
-            }
-
-            catch (e) {
-                console.error(e);
-            }
-        }
-
-        // Unit Kerja Tab handling
-        document.getElementById('unit-instansi-search').addEventListener('change', (e) => {
-            const instansi = window.instansiData?.find(i => i.nama === e.target.value);
-            if (instansi) document.getElementById('unit-instansi').value = instansi.id;
-        });
-
-        // Dynamic Form Render
-        function renderEntryForm() {
-            const container = document.getElementById('dynamic-inputs');
-            if (!container || !currentTableDef) return;
-
-            let html = '';
-
-            currentTableDef.columns.forEach(col => {
-                html += `<div class="form-group" > <label>${col.display_name} ${col.is_required ? '<span style="color:red">*</span>' : ''}</label> <input type="${col.data_type === 'integer' ? 'number' : 'text'}"
-                    class="form-control dynamic-input"
-                    data-name="${col.name}"
-
-                    ${col.is_required ? 'required' : ''}
-
-                    placeholder="Masukkan ${col.display_name}" > </div> `;
-            });
-            container.innerHTML = html;
-        }
-
-        // Keep helper functions like loadInstansiList, etc. defined previously
-        // Redefine loadData to use dynamic table API
-
-        async function loadData(page = 1) {
-            if (!currentTableId) return;
-
-            currentPage = page;
-            const offset = (page - 1) * pageSize;
-            const instansiId = document.getElementById('filter-instansi').value;
-
-            const unitKerjaInput = document.getElementById('filter-unit-kerja-input').value;
-            let unitKerjaId = '';
-
-            if (unitKerjaInput && window.unitKerjaData) {
-                const unit = window.unitKerjaData.find(u => {
-                    const label = u.instansi ? `${u.instansi.nama} - ${u.nama}` : u.nama;
-                    return label === unitKerjaInput || u.nama === unitKerjaInput;
+                    div.appendChild(input);
+                    container.appendChild(div);
                 });
-                if (unit) unitKerjaId = unit.id;
+
+            } catch (error) {
+                console.error(error);
+                container.innerHTML = '<p class="error">Gagal memuat form input</p>';
             }
+        }
 
-            const tanggal = document.getElementById('filter-tanggal').value;
+        function changeTable() {
+            const selector = document.getElementById('table-selector');
+            currentTableId = selector.value;
+            loadData(1);
+            loadStatistics();
+            loadDynamicInputs(currentTableId);
+        }
 
-            let url = `${API_BASE}/tables/${currentTableId}/data?limit=${pageSize}&offset=${offset}`;
-
-            if (instansiId) url += `&instansi_id=${instansiId}`;
-
-            if (unitKerjaId) url += `&unit_kerja_id=${unitKerjaId}`;
-
-            if (tanggal) url += `&tanggal_start=${tanggal}&tanggal_end=${tanggal}`;
+        // --- 2. Statistics & Clickable Cards ---
+        async function loadStatistics() {
+            const container = document.getElementById('stats-container');
+            const tableId = document.getElementById('table-selector').value;
 
             try {
+                let url = tableId ? `${API_BASE}/tables/${tableId}/statistics` : `${API_BASE}/statistics`;
+                const response = await fetch(url);
+                const result = await response.json();
+                const stats = result.data || result; // Unwrapper because API returns {data: {...}}
+
+                if (!stats) return;
+
+                container.innerHTML = '';
+
+                // Total Instansi (Clickable)
+                container.appendChild(createStatCard(
+                    'Total Instansi',
+                    stats.total_instansi || 0,
+                    'red',
+                    '<path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h8v2zm0-4h-8v-2h8v2zm0-4h-8V9h8v2z"/>',
+                    'instansi' // Type for modal
+                ));
+
+                // Total Unit Kerja (Clickable)
+                container.appendChild(createStatCard(
+                    'Total Unit Kerja',
+                    stats.total_unit_kerja || 0,
+                    'green',
+                    '<path d="M4 11h5V5H4v6zm0 7h5v-6H4v6zm6 0h5v-6h-5v6zm6 0h5v-6h-5v6zm-6-7h5V5h-5v6zm6-6v6h5V5h-5z"/>',
+                    'unit' // Type for modal
+                ));
+
+                // Grand Total
+                container.appendChild(createStatCard(
+                    'Total Data Arsip',
+                    (stats.grand_total || 0).toLocaleString('id-ID'),
+                    'blue',
+                    '<path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>'
+                ));
+
+                // Column Stats
+                if (stats.column_stats) {
+                    for (const [colName, val] of Object.entries(stats.column_stats)) {
+                        const display = colName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                        container.appendChild(createStatCard(
+                            display,
+                            (val || 0).toLocaleString('id-ID'),
+                            'purple',
+                            '<path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>'
+                        ));
+                    }
+                }
+
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        function createStatCard(title, value, colorClass, iconPath, type = null) {
+            const div = document.createElement('div');
+            div.className = 'stat-card';
+            if (type) {
+                div.style.cursor = 'pointer';
+                div.onclick = () => showDetailList(type);
+                div.title = "Klik untuk lihat detail";
+            }
+            div.innerHTML = `
+                <div class="stat-icon ${colorClass}">
+                    <svg viewBox="0 0 24 24">${iconPath}</svg>
+                </div>
+                <div class="stat-info">
+                    <h3>${value}</h3>
+                    <p>${title}</p>
+                </div>
+            `;
+            return div;
+        }
+
+        // Initialize global variable for search
+        window.detailData = [];
+        window.currentDetailType = '';
+
+        async function showDetailList(type) {
+            const modal = document.getElementById('modal-detail-list');
+            const title = document.getElementById('detail-list-title');
+            const thead = document.getElementById('detail-table-head');
+            const tbody = document.getElementById('detail-table-body');
+
+            // Inject Search Box if not exists (or reset it)
+            let searchContainer = document.getElementById('detail-search-container');
+            if (!searchContainer) {
+                searchContainer = document.createElement('div');
+                searchContainer.id = 'detail-search-container';
+                searchContainer.style.padding = '0 0 15px 0';
+                searchContainer.innerHTML = `
+                    <input type="text" id="detail-search-input" class="form-control" 
+                           placeholder="Cari data..." oninput="filterDetailList(this.value)">
+                `;
+                // Insert before the table container
+                const modalBody = modal.querySelector('.modal-body');
+                modalBody.insertBefore(searchContainer, modalBody.firstChild);
+            } else {
+                document.getElementById('detail-search-input').value = '';
+            }
+
+            modal.style.display = 'block';
+            tbody.innerHTML = '<tr><td colspan="3" class="loading">Memuat data...</td></tr>';
+
+            window.currentDetailType = type;
+            window.detailData = [];
+
+            try {
+                let url = '';
+                let headers = [];
+
+                if (type === 'instansi') {
+                    title.textContent = 'Daftar Instansi';
+                    url = `${API_BASE}/instansi?limit=2000`; // Limit increased
+                    headers = ['Kode', 'Nama Instansi'];
+                } else if (type === 'unit') {
+                    title.textContent = 'Daftar Unit Kerja';
+                    url = `${API_BASE}/unit-kerja?limit=5000`; // Limit increased
+                    headers = ['Kode', 'Nama Unit Kerja', 'Instansi Induk'];
+                }
+
+                thead.innerHTML = '<tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr>';
+
                 const res = await fetch(url);
                 const result = await res.json();
-                const tbody = document.getElementById('data-table');
+                const list = result.data || result;
 
-                if (result.data.length === 0) {
-                    const colspan = 3 + currentTableDef.columns.length + 1;
-                    tbody.innerHTML = `<tr><td colspan="${colspan}" class="empty-state">Tidak ada data</td></tr>`;
-                }
+                window.detailData = list;
 
-                else {
-                    tbody.innerHTML = result.data.map(d => {
-                        const rowData = d.data || {};
+                renderDetailTable(list);
 
-                        const colCells = currentTableDef.columns.map(c => `<td>${formatNumber(rowData[c.name])}</td>`).join('');
-                        const hasSummable = currentTableDef.columns.some(c => c.is_summable);
-
-                        const totalCell = hasSummable ? `<td><strong>${formatNumber(d.total)}</strong></td>` : '';
-
-                        return `<tr> <td>${d.unit_kerja?.instansi?.nama || '-'}</td> <td>${d.unit_kerja?.nama || '-'}</td> <td>${formatDate(d.tanggal)}</td> ${colCells} ${totalCell} </tr> `;
-                    }).join('');
-                }
-
-                renderPagination(result.total, page);
-            }
-
-            catch (e) {
-                const colspan = currentTableDef ? (3 + currentTableDef.columns.length + 1) : 8;
-
-                document.getElementById('data-table').innerHTML = `<tr><td colspan="${colspan}" class="empty-state">Error memuat data: ${e.message}</td></tr>`;
+            } catch (error) {
+                console.error(error);
+                tbody.innerHTML = '<tr><td colspan="3" class="loading">Gagal memuat data</td></tr>';
             }
         }
 
-        /* --- Modal Functions --- */
-        function openModal(id) {
-            document.getElementById(id).style.display = 'block';
+        function renderDetailTable(list) {
+            const tbody = document.getElementById('detail-table-body');
+            const type = window.currentDetailType;
+
+            if (list.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" class="loading">Tidak ada data ditemukan</td></tr>`;
+                return;
+            }
+
+            // Chunk rendering for performance if list is huge (optional, but good for 5000 items)
+            // For now simple render is usually fine for < 5000 text rows
+            const html = list.map(item => {
+                if (type === 'instansi') {
+                    return `<tr><td>${item.kode || '-'}</td><td>${item.nama}</td></tr>`;
+                } else {
+                    return `<tr><td>${item.kode || '-'}</td><td>${item.nama}</td><td>${item.instansi_nama || item.instansi?.nama || '-'}</td></tr>`;
+                }
+            }).join('');
+
+            tbody.innerHTML = html;
+        }
+
+        function filterDetailList(keyword) {
+            if (!keyword) {
+                renderDetailTable(window.detailData);
+                return;
+            }
+            const lowerInfo = keyword.toLowerCase();
+            const filtered = window.detailData.filter(item => {
+                // Search in relevant fields
+                if (window.currentDetailType === 'instansi') {
+                    return (item.nama && item.nama.toLowerCase().includes(lowerInfo)) ||
+                        (item.kode && item.kode.toLowerCase().includes(lowerInfo));
+                } else {
+                    const instansiName = item.instansi_nama || item.instansi?.nama || '';
+                    return (item.nama && item.nama.toLowerCase().includes(lowerInfo)) ||
+                        (item.kode && item.kode.toLowerCase().includes(lowerInfo)) ||
+                        (instansiName && instansiName.toLowerCase().includes(lowerInfo));
+                }
+            });
+            renderDetailTable(filtered);
+        }
+
+        // --- 3. Filters & Data Loading ---
+        async function populateFilterDropdowns() {
+            try {
+                // Instansi
+                const resInst = await fetch(`${API_BASE}/instansi?limit=2500`);
+                const instansiResult = await resInst.json();
+                const instansiList = instansiResult.data || instansiResult;
+
+                const selectInst = document.getElementById('filter-instansi-input');
+                const formInstSelect = document.getElementById('input-instansi-filter');
+                const unitInstSelect = document.getElementById('unit-instansi-select'); // New Unit Form Select
+
+                selectInst.innerHTML = '<option value="">Semua Instansi</option>';
+                if (formInstSelect) formInstSelect.innerHTML = '<option value="">Pilih Instansi...</option>';
+                if (unitInstSelect) unitInstSelect.innerHTML = '<option value="">Pilih Instansi...</option>';
+
+                // Store instansi data globally for lookup
+                window.instansiData = instansiList;
+
+                instansiList.forEach(i => {
+                    // Filter Dropdown
+                    const opt = document.createElement('option');
+                    opt.value = i.id;
+                    opt.textContent = i.nama;
+                    selectInst.appendChild(opt);
+
+                    // Form Select (Data Input)
+                    if (formInstSelect) {
+                        const opt2 = document.createElement('option');
+                        opt2.value = i.id;
+                        opt2.textContent = i.nama;
+                        formInstSelect.appendChild(opt2);
+                    }
+
+                    // Form Select (Unit Input)
+                    if (unitInstSelect) {
+                        const opt3 = document.createElement('option');
+                        opt3.value = i.id;
+                        opt3.textContent = i.nama;
+                        unitInstSelect.appendChild(opt3);
+                    }
+                });
+
+                // Units (Preload all for efficient client-side filtering)
+                const resUnit = await fetch(`${API_BASE}/unit-kerja?limit=5000`);
+                const unitResult = await resUnit.json();
+                const unitList = unitResult.data || unitResult;
+
+                window.allUnitsFormatted = unitList.map(u => ({
+                    id: u.id,
+                    nama: u.nama,
+                    instansi_id: u.instansi_id || (u.instansi ? u.instansi.id : null)
+                }));
+
+                // Initial populate
+                const selectUnit = document.getElementById('filter-unit-kerja-input');
+                selectUnit.innerHTML = '<option value="">Semua Unit Kerja</option>';
+                window.allUnitsFormatted.forEach(u => {
+                    const opt = document.createElement('option');
+                    opt.value = u.id;
+                    opt.textContent = u.nama;
+                    selectUnit.appendChild(opt);
+                });
+
+            } catch (e) {
+                console.error("Error populating filters", e);
+            }
+        }
+
+        // --- Input Form Logic ---
+        window.filterUnitKerjaSelect = function (instansiId) {
+            const unitSelect = document.getElementById('data-unit');
+            unitSelect.innerHTML = '<option value="">Pilih Instansi Terlebih Dahulu</option>';
+            unitSelect.disabled = true;
+
+            if (!instansiId) return;
+
+            // Instansi Selected, filter units directly by instansi_id
+            unitSelect.disabled = false;
+            unitSelect.innerHTML = '<option value="">Pilih Unit Kerja</option>';
+
+            const filteredUnits = window.allUnitsFormatted.filter(u => u.instansi_id == instansiId);
+
+            if (filteredUnits.length > 0) {
+                // Sort alphabetically
+                filteredUnits.sort((a, b) => a.nama.localeCompare(b.nama));
+
+                filteredUnits.forEach(u => {
+                    const opt = document.createElement('option');
+                    opt.value = u.id;
+                    opt.textContent = u.nama;
+                    unitSelect.appendChild(opt);
+                });
+            } else {
+                unitSelect.innerHTML = '<option value="">Tidak ada unit kerja</option>';
+            }
+        };
+
+
+
+        // Listener for Instansi Filter -> Filter Unit Dropdown
+        document.getElementById('filter-instansi-input').addEventListener('change', function () {
+            const instansiId = this.value;
+            const unitSelect = document.getElementById('filter-unit-kerja-input');
+            const allUnits = window.allUnitsFormatted || [];
+
+            unitSelect.innerHTML = '<option value="">Semua Unit Kerja</option>';
+
+            const filtered = instansiId
+                ? allUnits.filter(u => u.instansi_id == instansiId)
+                : allUnits;
+
+            filtered.forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u.id;
+                opt.textContent = u.nama;
+                unitSelect.appendChild(opt);
+            });
+
+            loadData(1);
+        });
+
+        document.getElementById('filter-unit-kerja-input').addEventListener('change', function () {
+            loadData(1);
+        });
+
+        async function loadData(page = 1) {
+            currentPage = page;
+            const tbody = document.getElementById('data-table');
+            const thead = document.getElementById('table-head');
+
+            tbody.innerHTML = '<tr><td colspan="100%" class="loading">Memuat data...</td></tr>';
+
+            const instansiId = document.getElementById('filter-instansi-input').value;
+            const unitId = document.getElementById('filter-unit-kerja-input').value;
+            const tanggal = document.getElementById('filter-tanggal').value;
+            const tableId = document.getElementById('table-selector').value;
+
+            try {
+                // Table Headers
+                let tableInfo = null;
+                try {
+                    const resMeta = await fetch(`${API_BASE}/tables/${tableId}`);
+                    if (resMeta.ok) {
+                        const meta = await resMeta.json();
+                        tableInfo = meta.data || meta;
+                    }
+                } catch (e) { }
+
+                let headersHTML = `
+                    <tr>
+                        <th style="width: 50px">No</th>
+                        <th>Instansi</th>
+                        <th>Unit Kerja</th>
+                        <th>Tanggal</th>
+                `;
+
+                if (tableInfo && tableInfo.columns) {
+                    tableInfo.columns.forEach(col => {
+                        headersHTML += `<th>${col.display_name}</th>`;
+                    });
+                } else {
+                    headersHTML += `<th>Total</th>`;
+                }
+                headersHTML += `<th style="width: 100px">Aksi</th></tr>`;
+                thead.innerHTML = headersHTML;
+
+                // Data Query
+                const params = new URLSearchParams({
+                    limit: pageSize,
+                    offset: (page - 1) * pageSize
+                });
+
+                if (instansiId) params.append('instansi_id', instansiId);
+                if (unitId) params.append('unit_kerja_id', unitId);
+                if (tanggal) params.append('tanggal_start', tanggal);
+                if (tanggal) params.append('tanggal_end', tanggal);
+
+                const response = await fetch(`${API_BASE}/tables/${tableId}/data?${params.toString()}`);
+                const result = await response.json();
+
+                const data = result.data || [];
+                const total = result.total || 0;
+
+                tbody.innerHTML = '';
+
+                if (data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="100%" class="empty-state">Belum ada data</td></tr>';
+                    renderPagination(0, 1);
+                    return;
+                }
+
+                const startNo = (page - 1) * pageSize + 1;
+
+                data.forEach((item, index) => {
+                    const tr = document.createElement('tr');
+
+                    let rowHTML = `
+                        <td><span class="badge-default">${startNo + index}</span></td>
+                        <td>${item.unit_kerja?.instansi?.nama || '-'}</td>
+                        <td>${item.unit_kerja?.nama || '-'}</td>
+                        <td>${formatDate(item.tanggal)}</td>
+                    `;
+
+                    if (tableInfo && tableInfo.columns) {
+                        tableInfo.columns.forEach(col => {
+                            let val = item.data ? item.data[col.name] : '-';
+                            rowHTML += `<td>${val}</td>`;
+                        });
+                    } else {
+                        rowHTML += `<td>${item.total}</td>`;
+                    }
+
+                    rowHTML += `
+                        <td>
+                            <button class="btn-sm btn-logout" onclick="deleteData(${item.id})" style="padding: 4px 8px;">
+                                <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:white;"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                            </button>
+                        </td>
+                    `;
+
+                    tr.innerHTML = rowHTML;
+                    tbody.appendChild(tr);
+                });
+
+                renderPagination(total, page);
+
+            } catch (error) {
+                console.error('Error loading data:', error);
+                tbody.innerHTML = '<tr><td colspan="100%" class="loading">Gagal memuat data</td></tr>';
+            }
+        }
+
+        function resetFilter() {
+            document.getElementById('filter-instansi-input').value = '';
+            document.getElementById('filter-unit-kerja-input').value = '';
+
+            // Default to Today for performance
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('filter-tanggal').value = today;
+
+            // Reset unit dropdown
+            const unitSelect = document.getElementById('filter-unit-kerja-input');
+            unitSelect.innerHTML = '<option value="">Semua Unit Kerja</option>';
+            if (window.allUnitsFormatted) {
+                window.allUnitsFormatted.forEach(u => {
+                    const opt = document.createElement('option');
+                    opt.value = u.id;
+                    opt.textContent = u.nama;
+                    unitSelect.appendChild(opt);
+                });
+            }
+
+            loadData(1);
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            const options = { day: 'numeric', month: 'short', year: 'numeric' };
+            return new Date(dateString).toLocaleDateString('id-ID', options);
+        }
+
+        function renderPagination(total, page) {
+            const totalPages = Math.ceil(total / pageSize);
+            const container = document.getElementById('pagination');
+            container.innerHTML = '';
+
+            if (totalPages <= 1) return;
+
+            const prevBtn = document.createElement('button');
+            prevBtn.className = 'page-btn';
+            prevBtn.textContent = '«';
+            prevBtn.disabled = page === 1;
+            prevBtn.onclick = () => loadData(page - 1);
+            container.appendChild(prevBtn);
+
+            let start = Math.max(1, page - 2);
+            let end = Math.min(totalPages, page + 2);
+
+            for (let i = start; i <= end; i++) {
+                const btn = document.createElement('button');
+                btn.className = `page-btn ${i === page ? 'active' : ''}`;
+                btn.textContent = i;
+                btn.onclick = () => loadData(i);
+                container.appendChild(btn);
+            }
+
+            const nextBtn = document.createElement('button');
+            nextBtn.className = 'page-btn';
+            nextBtn.textContent = '»';
+            nextBtn.disabled = page === totalPages;
+            nextBtn.onclick = () => loadData(page + 1);
+            container.appendChild(nextBtn);
+        }
+
+        // --- Modal Helpers ---
+        function openCreateModal() {
+            document.getElementById('modal-manage-tables').style.display = 'none';
+            document.getElementById('modal-create-table').style.display = 'block';
+            if (window.resetCreateForm) window.resetCreateForm();
         }
 
         function closeModal(id) {
             document.getElementById(id).style.display = 'none';
+            if (id === 'modal-create-table') {
+                document.getElementById('modal-manage-tables').style.display = 'block';
+            }
         }
 
-        /* --- Table Management --- */
+        // --- Manage Tables (Stub) ---
         async function manageTables() {
-            openModal('modal-manage-tables');
-            await loadTableListObj();
-        }
-
-        async function loadTableListObj() {
+            document.getElementById('modal-manage-tables').style.display = 'block';
             const container = document.getElementById('table-list-container');
-            container.innerHTML = '<p class="loading">Memuat daftar tabel...</p>';
-
             try {
                 const res = await fetch(`${API_BASE}/tables`);
                 const result = await res.json();
-                const tables = result.data;
-
-                if (tables.length === 0) {
-                    container.innerHTML = '<p class="empty-state">Belum ada tabel yang dibuat.</p>';
-                    return;
-                }
-
-                container.innerHTML = tables.map(t => `
-                    <div class="table-list-item">
+                const tables = result.data || [];
+                container.innerHTML = '';
+                tables.forEach(t => {
+                    const div = document.createElement('div');
+                    div.className = 'table-list-item';
+                    div.innerHTML = `
                         <div class="table-list-info">
                             <h4>${t.display_name} ${t.is_default ? '<span class="badge-default">Default</span>' : ''}</h4>
-                            <p>${t.description || "Tidak ada deskripsi"} | ${t.columns.length} Kolom</p>
+                            <small class="text-muted">ID: ${t.name}</small>
                         </div>
-                        <div style="display: flex; gap: 8px;">
-                            ${!t.is_default ? `<button class="btn btn-sm btn-secondary" style="padding: 5px 10px; font-size:12px;" onclick="setDefaultTable(${t.id})">Set Default</button>` : ''}
-                            <button class="btn btn-sm btn-logout" style="padding: 5px 10px; font-size:12px; background: #ff5252;" onclick="deleteTable(${t.id}, '${t.display_name}')">Hapus</button>
+                        <div class="table-list-actions">
+                            ${!t.is_default ? `<button class="btn btn-sm btn-primary" onclick="setDefaultTable(${t.id})">Set Default</button>` : ''}
+                            <button class="btn btn-sm btn-danger" onclick="deleteTable(${t.id}, '${t.display_name}')">Hapus</button>
                         </div>
-                    </div>
-                `).join('');
-            }
-
-            catch (e) {
-                container.innerHTML = '<p class="error">Gagal memuat tabel.</p>';
+                    `;
+                    container.appendChild(div);
+                });
+            } catch (e) {
+                container.innerHTML = '<p class="text-danger">Gagal memuat daftar tabel</p>';
             }
         }
 
-        function openCreateModal() {
-            closeModal('modal-manage-tables'); // close list
+        window.resetCreateForm = function () {
             document.getElementById('form-create-table').reset();
-            document.getElementById('column-builder').innerHTML = '';
-            // Add default columns? No, let user add.
-            // Add at least one column row
-            addColumnRow();
-            openModal('modal-create-table');
-        }
+            const cb = document.getElementById('column-builder');
+            if (cb) {
+                cb.innerHTML = '';
+                addColumnRow();
+            }
+        };
 
         function addColumnRow() {
             const container = document.getElementById('column-builder');
-            const idx = container.children.length;
+            if (!container) return;
             const div = document.createElement('div');
             div.className = 'column-builder-row';
-            div.innerHTML = ` <input type="text" class="form-control col-name" placeholder="Nama Kolom (Label)" required style="flex: 2;"><select class="form-control col-type" style="flex: 1;"><option value="integer">Angka (Total)</option><option value="string">Teks</option></select><div style="flex: 0 0 80px; display:flex; align-items:center; gap:5px; font-size:12px;"><input type="checkbox" class="col-sum" checked><label>Sum?</label></div><button type="button" class="btn btn-sm btn-logout" onclick="this.parentElement.remove()" style="padding: 2px 8px;">&times;
-            </button>`;
+            div.innerHTML = `
+                <input type="text" class="form-control col-name" placeholder="Nama Kolom (Label)" required style="flex: 2;">
+                <select class="form-control col-type" style="flex: 1;">
+                    <option value="integer">Angka (Total)</option>
+                    <option value="string">Teks</option>
+                </select>
+                <div style="flex: 0 0 80px; display:flex; align-items:center; gap:5px; font-size:12px;">
+                    <input type="checkbox" class="col-sum" checked>
+                    <label>Sum?</label>
+                </div>
+                <button type="button" class="btn btn-sm btn-logout" onclick="this.parentElement.remove()" style="padding: 2px 8px;">&times;</button>
+            `;
             container.appendChild(div);
         }
 
@@ -1229,7 +1552,7 @@
                     Swal.fire('Berhasil!', 'Tabel berhasil dibuat!', 'success');
                     closeModal('modal-create-table');
                     manageTables(); // Reopen list
-                    loadTables(); // Reload dropdown in dashboard
+                    loadTableList(); // Reload dropdown in dashboard
                 } else {
                     Swal.fire('Gagal!', result.message || result.detail, 'error');
                 }
@@ -1262,8 +1585,8 @@
 
                 if (res.ok) {
                     Swal.fire('Terhapus!', 'Tabel berhasil dihapus.', 'success');
-                    loadTableListObj();
-                    loadTables();
+                    manageTables();
+                    loadTableList();
                 } else {
                     const d = await res.json();
                     Swal.fire('Gagal!', d.message || d.detail, 'error');
@@ -1302,13 +1625,18 @@
                 });
 
                 if (res.ok) {
-                    loadTableListObj();
-                    loadTables();
+                    Swal.fire('Berhasil', 'Tabel default berhasil diubah', 'success');
+                    manageTables();
+                    loadTableList();
+                } else {
+                    const d = await res.json();
+                    Swal.fire('Gagal!', d.message || 'Gagal mengubah default', 'error');
                 }
             }
 
             catch (e) {
-                alert("Error koneksi");
+                console.error(e);
+                alert("Terjadi kesalahan sistem saat set default");
             }
         }
 
@@ -1378,11 +1706,9 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
-                    }
-
-                    ,
+                    },
                     body: JSON.stringify({
-                        instansi_id: parseInt(document.getElementById('unit-instansi').value),
+                        instansi_id: parseInt(document.getElementById('unit-instansi-select').value),
                         kode: document.getElementById('unit-kode').value,
                         nama: document.getElementById('unit-nama').value
                     })
@@ -1394,14 +1720,10 @@
                     e.target.reset();
                     loadStats();
                     loadUnitKerjaList();
-                }
-
-                else {
+                } else {
                     alertBox.innerHTML = `<div class="alert alert-error" >${result.detail || 'Gagal menyimpan'}</div>`;
                 }
-            }
-
-            catch (error) {
+            } catch (error) {
                 alertBox.innerHTML = '<div class="alert alert-error">Terjadi kesalahan</div>';
             }
         });
@@ -1437,6 +1759,83 @@
                     ,
                     body: JSON.stringify(payload)
                 });
+
+                /* --- Detail Functions --- */
+                async function showInstansiDetail() {
+                    document.getElementById('detail-list-title').textContent = "Daftar Instansi";
+                    const head = document.getElementById('detail-table-head');
+                    const body = document.getElementById('detail-table-body');
+
+                    openModal('modal-detail-list');
+                    body.innerHTML = '<tr><td colspan="2" class="loading">Memuat data...</td></tr>';
+                    head.innerHTML = '<tr><th style="text-align:left; padding:10px;">Kode</th><th style="text-align:left; padding:10px;">Nama Instansi</th></tr>';
+
+                    try {
+                        const res = await fetch(`${API_BASE}/instansi`);
+                        const result = await res.json();
+
+                        if (result.data.length === 0) {
+                            body.innerHTML = '<tr><td colspan="2" class="empty-state">Belum ada data instansi</td></tr>';
+                            return;
+                        }
+
+                        body.innerHTML = result.data.map(i => `
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding:10px;">${i.kode}</td>
+                        <td style="padding:10px;">${i.nama}</td>
+                    </tr>
+                `).join('');
+                    } catch (e) {
+                        body.innerHTML = '<tr><td colspan="2" class="error">Gagal memuat data</td></tr>';
+                    }
+                }
+
+                async function showUnitDetail() {
+                    document.getElementById('detail-list-title').textContent = "Daftar Unit Kerja";
+                    const head = document.getElementById('detail-table-head');
+                    const body = document.getElementById('detail-table-body');
+
+                    openModal('modal-detail-list');
+                    body.innerHTML = '<tr><td colspan="3" class="loading">Memuat data...</td></tr>';
+                    head.innerHTML = '<tr><th style="text-align:left; padding:10px;">Instansi</th><th style="text-align:left; padding:10px;">Kode</th><th style="text-align:left; padding:10px;">Nama Unit Kerja</th></tr>';
+
+                    try {
+                        // Fetch all units. If API supports fitlering, great. Assuming /unit-kerja returns all if no filter.
+                        // We might need to join with Instansi name if backend doesn't provide it flattened.
+                        // Based on previous code, /unit-kerja returns list of {id, kode, nama, instansi_id}.
+                        // We might need to fetch instansi list to map names if backend doesn't return 'instansi' obj.
+                        // Checking previous code: loadUnitsForSelect uses /unit-kerja?instansi_id=...
+                        // Let's assume /unit-kerja without params returns all.
+
+                        const res = await fetch(`${API_BASE}/unit-kerja`); // Assuming this endpoint exists for all units
+                        // If this endpoint requires instansi_id, we might need a new endpoint or loop through instansi.
+                        // Let's try general fetch. If 404/400, we might need to adjust.
+
+                        const result = await res.json();
+
+                        if (result.data.length === 0) {
+                            body.innerHTML = '<tr><td colspan="3" class="empty-state">Belum ada data unit kerja</td></tr>';
+                            return;
+                        }
+
+                        // If result.data items contain 'instansi' object, use it. Otherwise map.
+                        // Looking at loadData, d.unit_kerja?.instansi?.nama implies strict relationship.
+                        // Let's assume the API returns nested objects or we just show what we have.
+
+                        body.innerHTML = result.data.map(u => {
+                            const instansiName = u.instansi ? u.instansi.nama : (window.instansiData?.find(i => i.id == u.instansi_id)?.nama || '-');
+                            return `
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding:10px;">${instansiName}</td>
+                        <td style="padding:10px;">${u.kode}</td>
+                        <td style="padding:10px;">${u.nama}</td>
+                    </tr>
+                `}).join('');
+                    } catch (e) {
+                        console.error(e);
+                        body.innerHTML = '<tr><td colspan="3" class="error">Gagal memuat data (Pastikan endpoint /api/unit-kerja support Get All)</td></tr>';
+                    }
+                }
 
                 const result = await res.json();
 
@@ -1484,10 +1883,25 @@
 
         function formatDate(dateStr) {
             if (!dateStr) return '-';
-
             return new Date(dateStr).toLocaleDateString('id-ID', {
                 day: '2-digit', month: 'short', year: 'numeric'
             });
+        }
+
+        function switchTab(tabId) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+
+            // Show target tab content
+            const target = document.getElementById(tabId);
+            if (target) target.classList.add('active');
+
+            // Activate the clicked tab
+            if (event && event.currentTarget) {
+                event.currentTarget.classList.add('active');
+            }
         }
 
     </script>

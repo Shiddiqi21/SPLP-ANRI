@@ -1,9 +1,12 @@
 """
 Service untuk mengelola definisi tabel dinamis (Versi Fisik / Physical Table)
 """
+from sqlalchemy import text
 from typing import Dict, Any, List, Optional
 from datetime import date, datetime
-from sqlalchemy import text
+from app.database import get_db
+
+from app.services.cache_service import cache, cached
 from sqlalchemy.orm import joinedload
 from app.database import get_db_context
 from app.models.table_models import TableDefinition, ColumnDefinition
@@ -121,6 +124,14 @@ class TableService:
                 
                 db.execute(text(ddl))
                 
+                # Add indexes for performance
+                try:
+                    db.execute(text(f"CREATE INDEX IF NOT EXISTS idx_{safe_name}_unit_kerja_id ON {safe_name} (unit_kerja_id)"))
+                    db.execute(text(f"CREATE INDEX IF NOT EXISTS idx_{safe_name}_tanggal ON {safe_name} (tanggal)"))
+                    db.execute(text(f"CREATE INDEX IF NOT EXISTS idx_{safe_name}_unit_tanggal ON {safe_name} (unit_kerja_id, tanggal)"))
+                except Exception as e:
+                    print(f"Warning: Failed to create indexes: {e}")
+
                 # Add FK manually to be safe about table existence order or dialect quirks
                 try:
                      db.execute(text(f"ALTER TABLE {safe_name} ADD CONSTRAINT fk_{safe_name}_unit FOREIGN KEY (unit_kerja_id) REFERENCES unit_kerja(id) ON DELETE CASCADE"))
@@ -128,12 +139,22 @@ class TableService:
                     pass # Ignore if fails (e.g. SQLite limitations)
                 
                 db.commit()
-                db.refresh(table)
                 
-                return {"status": "success", "data": table.to_dict(include_columns=True)}
+                # Fetch fresh object with columns for return
+                try:
+                    db.refresh(table)
+                    # Force load columns while session is active
+                    _ = table.columns
+                    return_data = table.to_dict(include_columns=True)
+                except Exception as e:
+                    print(f"Warning: Failed to refresh table data after create: {e}")
+                    return_data = {"id": table.id, "name": safe_name, "display_name": display_name}
+
+                return {"status": "success", "data": return_data}
+                
             except Exception as e:
                 db.rollback()
-                return {"status": "error", "message": str(e)}
+                return {"status": "error", "message": f"Terjadi kesalahan teknis: {str(e)}"}
     
     def update_table(self, table_id: int, display_name: str = None, description: str = None, is_default: bool = None) -> Dict[str, Any]:
         """Update table definition (Metadata only)"""
@@ -219,10 +240,48 @@ class TableService:
                 query += " AND t.tanggal <= :t_end"
                 params['t_end'] = tanggal_end
                 
-            # Count total
+            # Count total (Optimized)
             try:
-                count_query = f"SELECT COUNT(*) FROM ({query}) as sub"
-                total = db.execute(text(count_query), params).scalar()
+                # Use cache if no filters are active
+                cache_key = f"total_count_{table_id}"
+                total = None
+                has_filters = any([instansi_id, unit_kerja_id, tanggal_start, tanggal_end])
+                
+                if not has_filters:
+                    total = cache.get(cache_key)
+                
+                if total is None:
+                    # Build count query separately to avoid unnecessary joins
+                    count_query = f"SELECT COUNT(*) FROM {safe_name} t"
+                    count_params = {}
+                    count_where = ["1=1"]
+                    
+                    # Only join if filtering by instansi (need u.instansi_id)
+                    if instansi_id:
+                         count_query += " JOIN unit_kerja u ON t.unit_kerja_id = u.id"
+                         count_where.append("u.instansi_id = :instansi_id")
+                         count_params['instansi_id'] = instansi_id
+                    
+                    if unit_kerja_id:
+                        count_where.append("t.unit_kerja_id = :unit_id")
+                        count_params['unit_id'] = unit_kerja_id
+
+                    if tanggal_start:
+                        count_where.append("t.tanggal >= :t_start")
+                        count_params['t_start'] = tanggal_start
+                    
+                    if tanggal_end:
+                        count_where.append("t.tanggal <= :t_end")
+                        count_params['t_end'] = tanggal_end
+                    
+                    count_query += " WHERE " + " AND ".join(count_where)
+                    
+                    total = db.execute(text(count_query), count_params).scalar()
+                    
+                    # Cache the total if no filters (TTL 5 mins)
+                    if not has_filters:
+                        cache.set(cache_key, total, ttl=300)
+                        
             except Exception:
                 # Likely table lookup failed
                 return {"data": [], "total": 0}
@@ -265,6 +324,7 @@ class TableService:
                 "offset": offset
             }
 
+    @cached(prefix="stats_table", ttl=300)
     def get_statistics(self, table_id: int) -> Dict[str, Any]:
         """Get statistics from PHYSICAL table"""
         with get_db_context() as db:
@@ -275,17 +335,22 @@ class TableService:
             safe_name = self._sanitize_name(table.name)
             
             try:
-                # 1. Total Instansi & Unit
-                count_unit_sql = f"SELECT COUNT(DISTINCT unit_kerja_id) FROM {safe_name}"
+                # 1. Total Instansi & Unit (Query Master Data directly for speed)
+                # Previously queried transaction table with DISTINCT which is slow on 2M+ rows.
+                # Since the dashboard cards link to the full list of Master Data, these counts should match the Master Data count.
+                
+                count_unit_sql = "SELECT COUNT(*) FROM unit_kerja"
                 total_unit = db.execute(text(count_unit_sql)).scalar()
                 
-                count_inst_sql = f"""
-                    SELECT COUNT(DISTINCT u.instansi_id) 
-                    FROM {safe_name} t
-                    JOIN unit_kerja u ON t.unit_kerja_id = u.id
-                """
+                count_inst_sql = "SELECT COUNT(*) FROM instansi"
                 total_instansi = db.execute(text(count_inst_sql)).scalar()
-            except Exception:
+                
+                total_instansi = db.execute(text(count_inst_sql)).scalar()
+                
+            except Exception as e:
+                import traceback
+                print(f"Error getting stats: {e}")
+                traceback.print_exc()
                 return {
                     "total_instansi": 0, "total_unit_kerja": 0, "grand_total": 0, "column_stats": {}
                 }
@@ -376,6 +441,10 @@ class TableService:
                 
                 db.execute(text(sql), params)
                 db.commit()
+
+                # Invalidate cache
+                cache.invalidate_prefix(f"stats_table")
+                cache.delete(f"total_count_{table_id}")
                 
                 return {"status": "success", "data": {"total": total}}
                 
@@ -440,6 +509,9 @@ class TableService:
                     sql = f"UPDATE {safe_name} SET {', '.join(update_sets)} WHERE id = :id"
                     session.execute(text(sql), params)
                     if not db: session.commit() # Only commit if we own the session
+                    # Invalidate cache
+                    cache.invalidate_prefix(f"stats_table")
+                    cache.delete(f"total_count_{table_id}")
                     return {"status": "success", "action": "updated"}
                     
                 else:
@@ -467,6 +539,11 @@ class TableService:
                     sql = f"INSERT INTO {safe_name} ({', '.join(cols)}) VALUES ({', '.join(vals)})"
                     session.execute(text(sql), params)
                     if not db: session.commit()
+                    
+                    # Invalidate cache
+                    cache.invalidate_prefix(f"stats_table")
+                    cache.delete(f"total_count_{table_id}")
+                    
                     return {"status": "success", "action": "inserted"}
 
             except Exception as e:
