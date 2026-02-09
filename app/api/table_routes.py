@@ -29,7 +29,40 @@ class TableUpdate(BaseModel):
     description: Optional[str] = None
     is_default: Optional[bool] = None
 
+from app.services.schema_inspector import schema_inspector
+
+class TableRegister(BaseModel):
+    name: str # Table name from DB
+    display_name: str
+    description: Optional[str] = None
+
 # Routes
+@router.get("/candidates", summary="Get Candidate Tables")
+async def get_candidate_tables():
+    """Get tables from DB that are not yet registered"""
+    tables = schema_inspector.get_candidate_tables()
+    return {"status": "success", "data": tables}
+
+@router.post("/register", summary="Register Existing Table")
+async def register_table(data: TableRegister):
+    """Register an existing physical table"""
+    # 1. Inspect columns
+    columns = schema_inspector.get_table_columns(data.name)
+    if not columns:
+        raise HTTPException(status_code=400, detail=f"Tabel '{data.name}' tidak ditemukan atau tidak memiliki kolom.")
+    
+    # 2. Register metadata
+    result = table_service.register_existing_table(
+        name=data.name,
+        display_name=data.display_name,
+        description=data.description,
+        columns=columns
+    )
+    
+    if result["status"] == "error":
+        raise HTTPException(status_code=400, detail=result["message"])
+    return result
+
 @router.get("", summary="Get All Tables")
 async def get_tables():
     """Get all defined tables"""
@@ -133,3 +166,26 @@ async def get_table_data(
         limit=limit,
         offset=offset
     )
+
+@router.put("/{table_id}/data/{row_id}", summary="Update Table Data")
+async def update_table_data(table_id: int, row_id: int, payload: Dict[str, Any]):
+    """Update specific data row"""
+    result = table_service.update_dynamic_data(
+        table_id=table_id,
+        row_id=row_id,
+        data=payload
+    )
+    if result["status"] == "error":
+        raise HTTPException(status_code=400, detail=result["message"])
+    return result
+
+@router.delete("/{table_id}/data/{row_id}", summary="Delete Table Data")
+async def delete_table_data(table_id: int, row_id: int):
+    """Delete specific data row"""
+    result = table_service.delete_dynamic_data(
+        table_id=table_id,
+        row_id=row_id
+    )
+    if result["status"] == "error":
+        raise HTTPException(status_code=400, detail=result["message"])
+    return result

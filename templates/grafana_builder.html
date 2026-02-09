@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grafana URL Builder - SPLP</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #0288D1 0%, #03A9F4 100%);
+            color: white;
+            padding: 12px 25px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .btn-back {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.3s;
+        }
+
+        .btn-back:hover {
+            background: rgba(255, 255, 255, 0.3);
+            color: white;
+        }
+
+        .container-main {
+            max-width: 900px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .card {
+            background: white;
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+            margin-bottom: 20px;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #0288D1 0%, #03A9F4 100%);
+            color: white;
+            border-radius: 12px 12px 0 0;
+            padding: 20px;
+        }
+
+        .card-header h3 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .card-body {
+            padding: 25px;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .form-label i {
+            color: #0288D1;
+            margin-right: 5px;
+        }
+
+        .form-select,
+        .form-control {
+            width: 100%;
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: 'Poppins', sans-serif;
+            transition: all 0.3s;
+        }
+
+        .form-select:focus,
+        .form-control:focus {
+            border-color: #0288D1;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(2, 136, 209, 0.1);
+        }
+
+        .checkbox-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .form-check {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-check-input {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #0288D1;
+        }
+
+        .form-check-label {
+            font-size: 14px;
+            color: #333;
+            cursor: pointer;
+        }
+
+        .btn-generate {
+            background: linear-gradient(135deg, #0288D1 0%, #03A9F4 100%);
+            color: white;
+            border: none;
+            padding: 14px 40px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-generate:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(2, 136, 209, 0.4);
+        }
+
+        .url-box {
+            background: #f8f9fa;
+            border: 2px solid #0288D1;
+            border-radius: 8px;
+            padding: 15px;
+            padding-right: 100px;
+            font-family: 'Consolas', monospace;
+            font-size: 13px;
+            word-break: break-all;
+            position: relative;
+            color: #333;
+        }
+
+        .btn-copy {
+            position: absolute;
+            top: 50%;
+            right: 10px;
+            transform: translateY(-50%);
+            background: #0288D1;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 13px;
+        }
+
+        .btn-copy:hover {
+            background: #0277BD;
+        }
+
+        .preview-box {
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .preview-box a {
+            color: #0288D1;
+        }
+
+        .section-divider {
+            margin: 25px 0;
+            border: 0;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .step-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            background: #0288D1;
+            color: white;
+            border-radius: 50%;
+            font-size: 14px;
+            font-weight: 600;
+            margin-right: 10px;
+        }
+
+        .instructions-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .instructions-list li {
+            padding: 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .instructions-list li::before {
+            content: counter(step);
+            counter-increment: step;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            background: #0288D1;
+            color: white;
+            border-radius: 50%;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .instructions-list {
+            counter-reset: step;
+        }
+
+        .small-text {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #e0e0e0;
+            border-top-color: #0288D1;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-left">
+            <i class="bi bi-bar-chart-fill" style="font-size: 24px;"></i>
+            <span class="header-title">Grafana URL Builder</span>
+        </div>
+        <a href="/" class="btn-back">
+            <i class="bi bi-arrow-left"></i> Kembali ke Dashboard
+        </a>
+    </div>
+
+    <div class="container-main">
+        <!-- Main Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="bi bi-link-45deg"></i> Generate URL untuk Grafana</h3>
+                <small style="opacity: 0.8;">Pilih data yang ingin divisualisasikan, lalu salin URL ke Grafana</small>
+            </div>
+            <div class="card-body">
+                <!-- Step 1: Pilih Tabel -->
+                <div class="mb-4">
+                    <label class="form-label">
+                        <span class="step-number">1</span>
+                        <i class="bi bi-table"></i> Pilih Tabel
+                    </label>
+                    <div id="tableCheckboxes" class="checkbox-grid">
+                        <div class="loading-spinner"></div>
+                        <span class="small-text">Memuat daftar tabel...</span>
+                    </div>
+                </div>
+
+                <hr class="section-divider">
+
+                <!-- Step 2: Pilih Kolom -->
+                <div class="mb-4" id="columnSection" style="display: none;">
+                    <label class="form-label">
+                        <span class="step-number">2</span>
+                        <i class="bi bi-list-columns"></i> Pilih Kolom <span class="small-text">(Opsional - kosongkan
+                            untuk semua)</span>
+                    </label>
+                    <div id="columnCheckboxes" class="checkbox-grid">
+                    </div>
+                </div>
+
+                <div class="mb-4" id="columnPlaceholder">
+                    <label class="form-label">
+                        <span class="step-number">2</span>
+                        <i class="bi bi-list-columns"></i> Pilih Kolom
+                    </label>
+                    <p class="small-text" style="margin-left: 38px;">Pilih tabel terlebih dahulu untuk melihat daftar
+                        kolom</p>
+                </div>
+
+                <hr class="section-divider">
+
+                <!-- Step 3: Pilih Tahun -->
+                <div class="mb-4">
+                    <label class="form-label">
+                        <span class="step-number">3</span>
+                        <i class="bi bi-calendar"></i> Pilih Tahun
+                    </label>
+                    <select class="form-select" id="yearSelect" style="max-width: 200px; margin-left: 38px;">
+                        <option value="2023">2023</option>
+                        <option value="2024">2024</option>
+                        <option value="2025" selected>2025</option>
+                        <option value="2026">2026</option>
+                    </select>
+                </div>
+
+                <hr class="section-divider">
+
+                <!-- Step 4: Pilih Bulan -->
+                <div class="mb-4">
+                    <label class="form-label">
+                        <span class="step-number">4</span>
+                        <i class="bi bi-calendar-month"></i> Pilih Bulan <span class="small-text">(Opsional - kosongkan
+                            untuk semua bulan)</span>
+                    </label>
+                    <div class="checkbox-grid" style="margin-left: 38px; grid-template-columns: repeat(4, 1fr);">
+                        <div class="form-check">
+                            <input class="form-check-input month-checkbox" type="checkbox" value="1" id="month_1">
+                            <label class="form-check-label" for="month_1">Januari</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input month-checkbox" type="checkbox" value="2" id="month_2">
+                            <label class="form-check-label" for="month_2">Februari</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input month-checkbox" type="checkbox" value="3" id="month_3">
+                            <label class="form-check-label" for="month_3">Maret</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input month-checkbox" type="checkbox" value="4" id="month_4">
+                            <label class="form-check-label" for="month_4">April</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input month-checkbox" type="checkbox" value="5" id="month_5">
+                            <label class="form-check-label" for="month_5">Mei</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input month-checkbox" type="checkbox" value="6" id="month_6">
+                            <label class="form-check-label" for="month_6">Juni</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input month-checkbox" type="checkbox" value="7" id="month_7">
+                            <label class="form-check-label" for="month_7">Juli</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input month-checkbox" type="checkbox" value="8" id="month_8">
+                            <label class="form-check-label" for="month_8">Agustus</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input month-checkbox" type="checkbox" value="9" id="month_9">
+                            <label class="form-check-label" for="month_9">September</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input month-checkbox" type="checkbox" value="10" id="month_10">
+                            <label class="form-check-label" for="month_10">Oktober</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input month-checkbox" type="checkbox" value="11" id="month_11">
+                            <label class="form-check-label" for="month_11">November</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input month-checkbox" type="checkbox" value="12" id="month_12">
+                            <label class="form-check-label" for="month_12">Desember</label>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="section-divider">
+
+                <!-- Step 5: Opsi -->
+                <div class="mb-4">
+                    <label class="form-label">
+                        <span class="step-number">5</span>
+                        <i class="bi bi-gear"></i> Opsi Tampilan
+                    </label>
+                    <div style="margin-left: 38px;">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="useDisplayName" checked>
+                            <label class="form-check-label" for="useDisplayName">
+                                Gunakan nama tampilan (Display Name) dari sistem
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="section-divider">
+
+                <!-- Generate Button -->
+                <div class="text-center mb-4">
+                    <button class="btn-generate" onclick="generateURL()">
+                        <i class="bi bi-lightning-charge-fill"></i> Generate URL
+                    </button>
+                </div>
+
+                <!-- Result -->
+                <div id="resultSection" style="display: none;">
+                    <label class="form-label">
+                        <i class="bi bi-clipboard-check"></i> URL untuk Grafana:
+                    </label>
+                    <div class="url-box" id="urlBox">
+                        <span id="generatedUrl"></span>
+                        <button class="btn-copy" onclick="copyURL()">
+                            <i class="bi bi-clipboard"></i> Salin
+                        </button>
+                    </div>
+
+                    <div class="preview-box">
+                        <strong><i class="bi bi-eye"></i> Preview Data</strong>
+                        <p class="small-text mb-2">Klik untuk melihat data di tab baru sebelum paste ke Grafana</p>
+                        <a href="#" id="previewLink" target="_blank">
+                            <i class="bi bi-box-arrow-up-right"></i> Buka Preview
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Instructions Card -->
+        <div class="card">
+            <div class="card-body">
+                <h5 style="color: #0288D1; margin-bottom: 15px;">
+                    <i class="bi bi-info-circle"></i> Cara Pakai di Grafana
+                </h5>
+                <ol class="instructions-list">
+                    <li>Salin URL yang sudah di-generate</li>
+                    <li>Buka Grafana → Buat Panel Baru</li>
+                    <li>Pilih Data Source <strong>"SPLP API"</strong> (Infinity)</li>
+                    <li>Paste URL di field <strong>URL</strong></li>
+                    <li>Pilih tipe visualisasi (Bar Chart, Pie, dll)</li>
+                    <li>Klik <strong>Apply</strong></li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = window.location.origin;
+        let allTables = [];
+        let allColumns = {};
+
+        document.addEventListener('DOMContentLoaded', loadTables);
+
+        async function loadTables() {
+            try {
+                const res = await fetch(`${BASE_URL}/api/stats/tables`);
+                const data = await res.json();
+                allTables = data.tables || [];
+
+                const container = document.getElementById('tableCheckboxes');
+                container.innerHTML = '';
+
+                if (allTables.length === 0) {
+                    container.innerHTML = '<span class="small-text">Tidak ada tabel tersedia</span>';
+                    return;
+                }
+
+                allTables.forEach(table => {
+                    const div = document.createElement('div');
+                    div.className = 'form-check';
+                    div.innerHTML = `
+                        <input class="form-check-input table-checkbox" type="checkbox" 
+                               value="${table.id}" id="table_${table.id}"
+                               onchange="onTableChange()">
+                        <label class="form-check-label" for="table_${table.id}">
+                            ${table.display_name}
+                        </label>
+                    `;
+                    container.appendChild(div);
+                });
+            } catch (e) {
+                document.getElementById('tableCheckboxes').innerHTML =
+                    '<span style="color: red;">Gagal memuat tabel. Pastikan server berjalan.</span>';
+            }
+        }
+
+        async function onTableChange() {
+            const checked = document.querySelectorAll('.table-checkbox:checked');
+            const columnSection = document.getElementById('columnSection');
+            const columnPlaceholder = document.getElementById('columnPlaceholder');
+            const columnContainer = document.getElementById('columnCheckboxes');
+
+            if (checked.length === 0) {
+                columnSection.style.display = 'none';
+                columnPlaceholder.style.display = 'block';
+                return;
+            }
+
+            columnSection.style.display = 'block';
+            columnPlaceholder.style.display = 'none';
+            columnContainer.innerHTML = '<div class="loading-spinner"></div>';
+
+            let allCols = [];
+            for (const cb of checked) {
+                const tableId = cb.value;
+                if (!allColumns[tableId]) {
+                    try {
+                        const res = await fetch(`${BASE_URL}/api/stats/columns?table_id=${tableId}`);
+                        const data = await res.json();
+                        allColumns[tableId] = data.columns || [];
+                    } catch (e) {
+                        allColumns[tableId] = [];
+                    }
+                }
+
+                const tableName = allTables.find(t => t.id == tableId)?.display_name || `Table ${tableId}`;
+                allColumns[tableId].forEach(col => {
+                    if (col.is_summable) {
+                        allCols.push({
+                            table_id: tableId,
+                            table_name: tableName,
+                            name: col.name,
+                            display_name: col.display_name
+                        });
+                    }
+                });
+            }
+
+            columnContainer.innerHTML = '';
+            allCols.forEach((col, idx) => {
+                const div = document.createElement('div');
+                div.className = 'form-check';
+                div.innerHTML = `
+                    <input class="form-check-input column-checkbox" type="checkbox" 
+                           value="${col.name}" data-table="${col.table_id}" id="col_${idx}">
+                    <label class="form-check-label" for="col_${idx}">
+                        ${col.display_name}
+                        <span class="small-text">(${col.table_name})</span>
+                    </label>
+                `;
+                columnContainer.appendChild(div);
+            });
+        }
+
+        function generateURL() {
+            const checkedTables = document.querySelectorAll('.table-checkbox:checked');
+            if (checkedTables.length === 0) {
+                alert('Pilih minimal satu tabel!');
+                return;
+            }
+
+            const tableIds = Array.from(checkedTables).map(cb => cb.value);
+            const year = document.getElementById('yearSelect').value;
+            const useDisplayName = document.getElementById('useDisplayName').checked;
+
+            // Get selected months
+            const checkedMonths = document.querySelectorAll('.month-checkbox:checked');
+            const months = Array.from(checkedMonths).map(cb => cb.value);
+
+            let url;
+            if (tableIds.length === 1) {
+                url = `${BASE_URL}/api/stats/grafana/monthly?table_id=${tableIds[0]}&year=${year}&use_display_name=${useDisplayName}`;
+
+                const checkedCols = document.querySelectorAll('.column-checkbox:checked');
+                if (checkedCols.length > 0) {
+                    const cols = Array.from(checkedCols).map(cb => cb.value).join(',');
+                    url += `&columns=${cols}`;
+                }
+
+                // Add months filter if selected
+                if (months.length > 0) {
+                    url += `&months=${months.join(',')}`;
+                }
+            } else {
+                url = `${BASE_URL}/api/stats/grafana/combined?table_ids=${tableIds.join(',')}&year=${year}&use_display_name=${useDisplayName}`;
+
+                // Add months filter if selected
+                if (months.length > 0) {
+                    url += `&months=${months.join(',')}`;
+                }
+            }
+
+            document.getElementById('generatedUrl').textContent = url;
+            document.getElementById('previewLink').href = url;
+            document.getElementById('resultSection').style.display = 'block';
+            document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function copyURL() {
+            const url = document.getElementById('generatedUrl').textContent;
+            navigator.clipboard.writeText(url).then(() => {
+                const btn = document.querySelector('.btn-copy');
+                btn.innerHTML = '<i class="bi bi-check"></i> Tersalin!';
+                btn.style.background = '#27ae60';
+
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="bi bi-clipboard"></i> Salin';
+                    btn.style.background = '#0288D1';
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+
+</html>

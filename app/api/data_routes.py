@@ -45,7 +45,7 @@ class DataArsipCreate(BaseModel):
 
 @router.get("/instansi", summary="Get All Instansi")
 async def get_instansi(
-    limit: int = Query(100, ge=1, le=500),
+    limit: int = Query(100, ge=1, le=5000),
     offset: int = Query(0, ge=0)
 ):
     """Get all instansi with pagination"""
@@ -96,7 +96,7 @@ async def delete_instansi(instansi_id: int):
 
 @router.get("/unit-kerja", summary="Get All Unit Kerja")
 async def get_all_unit_kerja(
-    limit: int = Query(100, ge=1, le=500),
+    limit: int = Query(100, ge=1, le=5000),
     offset: int = Query(0, ge=0)
 ):
     """Get all unit kerja with instansi info"""
@@ -106,7 +106,7 @@ async def get_all_unit_kerja(
 @router.get("/instansi/{instansi_id}/unit-kerja", summary="Get Unit Kerja by Instansi")
 async def get_unit_kerja_by_instansi(
     instansi_id: int,
-    limit: int = Query(100, ge=1, le=500),
+    limit: int = Query(100, ge=1, le=5000),
     offset: int = Query(0, ge=0)
 ):
     """Get all unit kerja for a specific instansi"""
@@ -122,6 +122,24 @@ async def create_unit_kerja(data: UnitKerjaCreate):
     """Create new unit kerja under an instansi"""
     result = data_service.create_unit_kerja(
         instansi_id=data.instansi_id,
+        kode=data.kode,
+        nama=data.nama
+    )
+    if result["status"] == "error":
+        raise HTTPException(status_code=400, detail=result["message"])
+    if result["status"] == "error":
+        raise HTTPException(status_code=400, detail=result["message"])
+    return result
+
+class UnitKerjaUpdate(BaseModel):
+    kode: Optional[str] = None
+    nama: Optional[str] = None
+
+@router.put("/unit-kerja/{unit_id}", summary="Update Unit Kerja")
+async def update_unit_kerja(unit_id: int, data: UnitKerjaUpdate):
+    """Update existing unit kerja"""
+    result = data_service.update_unit_kerja(
+        unit_id=unit_id,
         kode=data.kode,
         nama=data.nama
     )

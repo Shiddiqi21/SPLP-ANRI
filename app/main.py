@@ -19,6 +19,7 @@ from app.api.auth_routes import router as auth_router
 from app.api.data_routes import router as data_router
 from app.api.upload_routes import router as upload_router
 from app.api.table_routes import router as table_router
+from app.api.stats_routes import router as stats_router
 from app.services.integrator import integrator_service
 from app.services.arsip_service import arsip_service
 from app.services.aggregation_service import aggregation_service
@@ -54,16 +55,7 @@ async def lifespan(app: FastAPI):
     print("=" * 50)
     print("  SPLP Data Integrator v2.2 Starting...")
     print("=" * 50)
-    
-    # Skip table creation on startup (tables already exist)
-    # This speeds up startup with large datasets
     print("[Database] Skipping table checks (already initialized)")
-    
-    # DISABLED: Scheduler jobs block server with 2M+ records
-    # These jobs run heavy queries that prevent HTTP requests from being processed
-    # scheduler.add_job(scheduled_sync, 'interval', seconds=settings.sync_interval_seconds, id='sync_job')
-    # scheduler.add_job(scheduled_aggregation, 'interval', seconds=120, id='aggregation_job')
-    # scheduler.start()
     print("[Scheduler] DISABLED - Manual sync only (use /api/integrator/sync)")
     print("[Server] Ready to accept connections!")
 
@@ -126,6 +118,7 @@ app.include_router(auth_router)
 app.include_router(data_router)
 app.include_router(upload_router)
 app.include_router(table_router)
+app.include_router(stats_router)
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -150,6 +143,12 @@ async def register_page(request: Request):
 async def upload_page(request: Request):
     """Upload Page"""
     return templates.TemplateResponse("upload.html", {"request": request})
+
+
+@app.get("/grafana-builder", response_class=HTMLResponse)
+async def grafana_builder_page(request: Request):
+    """Grafana URL Builder Page"""
+    return templates.TemplateResponse("grafana_builder.html", {"request": request})
 
 
 

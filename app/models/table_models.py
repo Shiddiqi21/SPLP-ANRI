@@ -21,7 +21,7 @@ class TableDefinition(Base):
     
     # Relationships
     columns = relationship("ColumnDefinition", back_populates="table", cascade="all, delete-orphan", order_by="ColumnDefinition.order")
-    data = relationship("DynamicData", back_populates="table", cascade="all, delete-orphan")
+
     
     def to_dict(self, include_columns=False):
         result = {
@@ -68,50 +68,4 @@ class ColumnDefinition(Base):
         }
 
 
-class DynamicData(Base):
-    """
-    [DEPRECATED] Model untuk menyimpan data dinamis dengan struktur JSON.
-    Sekarang sistem menggunakan Physical Table Mode (Tabel fisik asli) sehingga model ini tidak lagi digunakan untuk penyimpanan tabel baru.
-    Dibiarkan ada untuk referensi data lama sebelum migrasi.
-    """
-    __tablename__ = "dynamic_data"
-    
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    table_id = Column(Integer, ForeignKey("table_definitions.id", ondelete="CASCADE"), nullable=False)
-    unit_kerja_id = Column(Integer, ForeignKey("unit_kerja.id", ondelete="CASCADE"), nullable=False)
-    tanggal = Column(Date, nullable=False)
-    data = Column(JSON, nullable=False, default={})  # Menyimpan data kolom dalam format JSON
-    total = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    # Relationships
-    table = relationship("TableDefinition", back_populates="data")
-    unit_kerja = relationship("UnitKerja")
-    
-    def calculate_total(self, columns):
-        """Calculate total from summable columns"""
-        total = 0
-        for col in columns:
-            if col.is_summable and col.name in self.data:
-                try:
-                    total += int(self.data.get(col.name, 0) or 0)
-                except (ValueError, TypeError):
-                    pass
-        self.total = total
-        return self.total
-    
-    def to_dict(self, include_unit_kerja=False):
-        result = {
-            "id": self.id,
-            "table_id": self.table_id,
-            "unit_kerja_id": self.unit_kerja_id,
-            "tanggal": self.tanggal.isoformat() if self.tanggal else None,
-            "data": self.data or {},
-            "total": self.total or 0,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-            "updated_at": self.updated_at.isoformat() if self.updated_at else None
-        }
-        if include_unit_kerja and self.unit_kerja:
-            result["unit_kerja"] = self.unit_kerja.to_dict(include_instansi=True)
-        return result
+

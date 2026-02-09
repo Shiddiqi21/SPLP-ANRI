@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - SPLP Data Integrator</title>
+    <title>Dashboard - SPLP Data Integrator v2.0</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
     <style>
@@ -116,12 +116,124 @@
         }
 
         .btn-logout {
-            background: #ff5252;
+            background: linear-gradient(135deg, #ff5252 0%, #ff1744 100%);
             color: white;
+            box-shadow: 0 4px 15px rgba(255, 82, 82, 0.3);
         }
 
         .btn-logout:hover {
-            background: #ff1744;
+            background: linear-gradient(135deg, #ff1744 0%, #d50000 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 82, 82, 0.4);
+        }
+
+        /* Premium Dropdown Menu */
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-toggle {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.1) 100%);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .dropdown-toggle:hover {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.2) 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .dropdown-toggle svg {
+            width: 16px;
+            height: 16px;
+            transition: transform 0.3s ease;
+        }
+
+        .dropdown:hover .dropdown-toggle svg {
+            transform: rotate(180deg);
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: calc(100% + 10px);
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 12px;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15), 0 5px 15px rgba(0, 0, 0, 0.08);
+            min-width: 220px;
+            padding: 8px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .dropdown:hover .dropdown-menu {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            color: #333;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            width: 100%;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .dropdown-item:hover {
+            background: linear-gradient(135deg, #0288D1 0%, #03A9F4 100%);
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .dropdown-item svg {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+        }
+
+        .dropdown-divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #e0e0e0, transparent);
+            margin: 8px 0;
+        }
+
+        .dropdown-item.danger {
+            color: #ff5252;
+        }
+
+        .dropdown-item.danger:hover {
+            background: linear-gradient(135deg, #ff5252 0%, #ff1744 100%);
+            color: white;
         }
 
         .main-content {
@@ -559,11 +671,58 @@
         <div class="header-center">Arsip Nasional Republik Indonesia</div>
         <div class="header-right">
             <span class="header-user" id="username">Administrator</span>
-            <a href="/upload" class="btn-header btn-api"
-                style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">Upload Data</a>
-            <button class="btn-header btn-api" onclick="manageTables()">Kelola Tabel</button>
-            <a href="/docs" class="btn-header btn-api" target="_blank">API Docs</a>
-            <button class="btn-header btn-logout" onclick="logout()">Logout</button>
+
+            <!-- Premium Dropdown Menu -->
+            <div class="dropdown">
+                <button class="dropdown-toggle">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                    Menu
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+                <div class="dropdown-menu">
+                    <a href="/upload" class="dropdown-item">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        Upload Data
+                    </a>
+                    <a href="/grafana-builder" class="dropdown-item">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        Grafana Builder
+                    </a>
+                    <button onclick="manageTables()" class="dropdown-item">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
+                        </svg>
+                        Kelola Tabel
+                    </button>
+                    <a href="/docs" class="dropdown-item" target="_blank">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                        </svg>
+                        API Documentation
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <button onclick="logout()" class="dropdown-item danger">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        Logout
+                    </button>
+                </div>
+            </div>
         </div>
     </header>
 
@@ -936,7 +1095,8 @@
             const tableId = document.getElementById('table-selector').value;
 
             try {
-                let url = tableId ? `${API_BASE}/tables/${tableId}/statistics` : `${API_BASE}/statistics`;
+                const timestamp = new Date().getTime();
+                let url = tableId ? `${API_BASE}/tables/${tableId}/statistics?t=${timestamp}` : `${API_BASE}/statistics?t=${timestamp}`;
                 const response = await fetch(url);
                 const result = await response.json();
                 const stats = result.data || result; // Unwrapper because API returns {data: {...}}
@@ -1046,17 +1206,20 @@
                 let url = '';
                 let headers = [];
 
+                const timestamp = new Date().getTime();
                 if (type === 'instansi') {
                     title.textContent = 'Daftar Instansi';
-                    url = `${API_BASE}/instansi?limit=2000`; // Limit increased
+                    url = `${API_BASE}/instansi?limit=2000&t=${timestamp}`;
                     headers = ['Kode', 'Nama Instansi'];
                 } else if (type === 'unit') {
                     title.textContent = 'Daftar Unit Kerja';
-                    url = `${API_BASE}/unit-kerja?limit=5000`; // Limit increased
+                    url = `${API_BASE}/unit-kerja?limit=5000&t=${timestamp}`;
                     headers = ['Kode', 'Nama Unit Kerja', 'Instansi Induk'];
                 }
 
-                thead.innerHTML = '<tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr>';
+                // Add Action Header
+                const headerHtml = headers.map(h => `<th>${h}</th>`).join('') + '<th style="width: 120px; text-align: center;">Aksi</th>';
+                thead.innerHTML = '<tr>' + headerHtml + '</tr>';
 
                 const res = await fetch(url);
                 const result = await res.json();
@@ -1077,18 +1240,33 @@
             const type = window.currentDetailType;
 
             if (list.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="3" class="loading">Tidak ada data ditemukan</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="100%" class="loading">Tidak ada data ditemukan</td></tr>`;
                 return;
             }
 
-            // Chunk rendering for performance if list is huge (optional, but good for 5000 items)
-            // For now simple render is usually fine for < 5000 text rows
             const html = list.map(item => {
+                let columns = '';
                 if (type === 'instansi') {
-                    return `<tr><td>${item.kode || '-'}</td><td>${item.nama}</td></tr>`;
+                    columns = `<td>${item.kode || '-'}</td><td>${item.nama}</td>`;
                 } else {
-                    return `<tr><td>${item.kode || '-'}</td><td>${item.nama}</td><td>${item.instansi_nama || item.instansi?.nama || '-'}</td></tr>`;
+                    columns = `<td>${item.kode || '-'}</td><td>${item.nama}</td><td>${item.instansi_nama || item.instansi?.nama || '-'}</td>`;
                 }
+
+                const editFunc = type === 'instansi' ? 'editInstansi' : 'editUnit';
+                const deleteFunc = type === 'instansi' ? 'deleteInstansi' : 'deleteUnit';
+
+                return `
+                    <tr>
+                        ${columns}
+                        <td style="text-align: center; white-space: nowrap;">
+                            <button onclick="${editFunc}(${item.id})" style="padding: 6px 12px; background: linear-gradient(135deg, #f39c12, #e67e22); color: white; border: none; border-radius: 6px; cursor: pointer; margin-right: 5px;">
+                                <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:white;vertical-align:middle;"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                            </button><button onclick="${deleteFunc}(${item.id})" style="padding: 6px 12px; background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; border: none; border-radius: 6px; cursor: pointer;">
+                                <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:white;vertical-align:middle;"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                            </button>
+                        </td>
+                    </tr>
+                `;
             }).join('');
 
             tbody.innerHTML = html;
@@ -1119,7 +1297,8 @@
         async function populateFilterDropdowns() {
             try {
                 // Instansi
-                const resInst = await fetch(`${API_BASE}/instansi?limit=2500`);
+                // Instansi
+                const resInst = await fetch(`${API_BASE}/instansi?limit=2500&t=${Date.now()}`);
                 const instansiResult = await resInst.json();
                 const instansiList = instansiResult.data || instansiResult;
 
@@ -1159,7 +1338,8 @@
                 });
 
                 // Units (Preload all for efficient client-side filtering)
-                const resUnit = await fetch(`${API_BASE}/unit-kerja?limit=5000`);
+                // Units (Preload all for efficient client-side filtering)
+                const resUnit = await fetch(`${API_BASE}/unit-kerja?limit=5000&t=${Date.now()}`);
                 const unitResult = await resUnit.json();
                 const unitList = unitResult.data || unitResult;
 
@@ -1257,10 +1437,11 @@
                 // Table Headers
                 let tableInfo = null;
                 try {
-                    const resMeta = await fetch(`${API_BASE}/tables/${tableId}`);
+                    const resMeta = await fetch(`${API_BASE}/tables/${tableId}?t=${Date.now()}`);
                     if (resMeta.ok) {
                         const meta = await resMeta.json();
                         tableInfo = meta.data || meta;
+                        window.currentTableInfo = tableInfo; // Store globally for edit
                     }
                 } catch (e) { }
 
@@ -1291,12 +1472,15 @@
                 if (instansiId) params.append('instansi_id', instansiId);
                 if (unitId) params.append('unit_kerja_id', unitId);
                 if (tanggal) params.append('tanggal_start', tanggal);
+                if (tanggal) params.append('tanggal_start', tanggal);
                 if (tanggal) params.append('tanggal_end', tanggal);
+                params.append('_t', Date.now()); // Cache busting
 
                 const response = await fetch(`${API_BASE}/tables/${tableId}/data?${params.toString()}`);
                 const result = await response.json();
 
                 const data = result.data || [];
+                window.currentTableData = data; // Store globally
                 const total = result.total || 0;
 
                 tbody.innerHTML = '';
@@ -1329,9 +1513,11 @@
                     }
 
                     rowHTML += `
-                        <td>
-                            <button class="btn-sm btn-logout" onclick="deleteData(${item.id})" style="padding: 4px 8px;">
-                                <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:white;"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                        <td style="text-align: center; white-space: nowrap;">
+                            <button onclick="editData(${item.id})" style="padding: 6px 12px; background: linear-gradient(135deg, #f39c12, #e67e22); color: white; border: none; border-radius: 6px; cursor: pointer; margin-right: 5px;">
+                                <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:white;vertical-align:middle;"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                            </button><button onclick="deleteData(${item.id})" style="padding: 6px 12px; background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; border: none; border-radius: 6px; cursor: pointer;">
+                                <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:white;vertical-align:middle;"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
                             </button>
                         </td>
                     `;
@@ -1429,7 +1615,7 @@
             document.getElementById('modal-manage-tables').style.display = 'block';
             const container = document.getElementById('table-list-container');
             try {
-                const res = await fetch(`${API_BASE}/tables`);
+                const res = await fetch(`${API_BASE}/tables?t=${Date.now()}`);
                 const result = await res.json();
                 const tables = result.data || [];
                 container.innerHTML = '';
@@ -1482,87 +1668,103 @@
             container.appendChild(div);
         }
 
-        async function submitCreateTable() {
-            const displayName = document.getElementById('new-table-display').value;
-
-            if (!displayName) {
-                alert("Nama tabel harus diisi");
-                return;
-            }
-
-            const desc = document.getElementById('new-table-desc').value;
-
-            // Build columns
-            const rows = document.querySelectorAll('.column-builder-row');
-            const columns = [];
-
-            rows.forEach((row, index) => {
-                const label = row.querySelector('.col-name').value;
-                if (!label) return;
-
-                const type = row.querySelector('.col-type').value;
-                const isSum = row.querySelector('.col-sum').checked;
-
-                // Simple slugify for internal name
-                const name = label.toLowerCase().replace(/[^a-z0-9]/g, '_');
-
-                columns.push({
-                    name: name, // Removed random suffix
-                    display_name: label,
-                    data_type: type,
-                    is_summable: isSum,
-                    order: index
-                });
-            });
-
-            if (columns.length === 0) {
-                alert("Minimal satu kolom harus ditambahkan");
-                return;
-            }
-
-            const payload = {
-                name: displayName.toLowerCase().replace(/[^a-z0-9]/g, '_'), // Removed random suffix
-                display_name: displayName,
-                description: desc,
-                columns: columns
-            };
-
-            const confirmResult = await Swal.fire({
-                title: 'Buat tabel baru?',
-                text: "Pastikan data sudah benar",
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: 'Ya, Buat',
-                cancelButtonText: 'Batal'
-            });
-
-            if (!confirmResult.isConfirmed) return;
-
-            try {
-                const res = await fetch(`${API_BASE}/tables`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(payload)
-                });
-                const result = await res.json();
-
-                if (res.ok) {
-                    Swal.fire('Berhasil!', 'Tabel berhasil dibuat!', 'success');
-                    closeModal('modal-create-table');
-                    manageTables(); // Reopen list
-                    loadTableList(); // Reload dropdown in dashboard
-                } else {
-                    Swal.fire('Gagal!', result.message || result.detail, 'error');
+        // function deleted
+        /*
+        
+                    select.disabled = true;
+        
+                    try {
+                        const res = await fetch(`${API_BASE}/tables/candidates`);
+                        const result = await res.json();
+                        const tables = result.data || [];
+        
+                        select.innerHTML = '<option value="">-- Pilih Tabel Database --</option>';
+        
+                        if (tables.length === 0) {
+                            const opt = document.createElement('option');
+                            opt.innerHTML = "(Tidak ada tabel yang tersedia)";
+                            opt.disabled = true;
+                            select.appendChild(opt);
+                        }
+        
+                        tables.forEach(t => {
+                            const opt = document.createElement('option');
+                            opt.value = t;
+                            opt.textContent = t;
+                            select.appendChild(opt);
+                        });
+                    } catch (e) {
+                        console.error(e);
+                        select.innerHTML = '<option>Error memuat tabel</option>';
+                    } finally {
+                        select.disabled = false;
+                    }
                 }
-            }
-
-            catch (e) {
-                console.error(e);
-                alert("Terjadi kesalahan sistem");
-            }
-        }
+        
+                function autoFillDisplayName() {
+                    const select = document.getElementById('register-table-select');
+                    const displayInput = document.getElementById('register-table-display');
+        
+                    if (select.value) {
+                        // Convert underscore_case to Title Case
+                        const name = select.value.replace(/_/g, ' ');
+                        displayInput.value = name.replace(/\b\w/g, l => l.toUpperCase());
+                    }
+                }
+        
+                async function submitRegisterTable() {
+                    const tableName = document.getElementById('register-table-select').value;
+                    const displayName = document.getElementById('register-table-display').value;
+                    const desc = document.getElementById('register-table-desc').value;
+        
+                    if (!tableName) {
+                        alert("Silakan pilih tabel database");
+                        return;
+                    }
+                    if (!displayName) {
+                        alert("Nama tampilan harus diisi");
+                        return;
+                    }
+        
+                    const payload = {
+                        name: tableName,
+                        display_name: displayName,
+                        description: desc
+                    };
+        
+                    // Loading state
+                    Swal.fire({
+                        title: 'Mendaftarkan tabel...',
+                        allowOutsideClick: false,
+                        didOpen: () => { Swal.showLoading() }
+                    });
+        
+                    try {
+                        const res = await fetch(`${API_BASE}/tables/register`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        const result = await res.json();
+        
+                        if (res.ok) {
+                            Swal.fire({
+                                title: 'Berhasil!',
+                                text: `Tabel "${displayName}" berhasil didaftarkan.`,
+                                icon: 'success'
+                            }).then(() => {
+                                closeModal('modal-register-table');
+                                manageTables();
+                                loadTableList(); // Reload dropdown in dashboard
+                            });
+                        } else {
+                            Swal.fire('Gagal!', result.detail || result.message || 'Gagal mendaftarkan tabel', 'error');
+                        }
+                    } catch (e) {
+                        console.error(e);
+                        Swal.fire('Error', 'Terjadi kesalahan sistem', 'error');
+                    }
+                } */
 
         async function deleteTable(id, name) {
             const confirmResult = await Swal.fire({
@@ -1651,13 +1853,29 @@
             }
 
             let html = '';
-            if (currentPage > 1) html += `<button class="page-btn" onclick="loadData(${currentPage - 1})">Prev</button>`;
 
-            for (let i = 1; i <= Math.min(totalPages, 5); i++) {
+            // Prev Button
+            if (currentPage > 1) {
+                html += `<button class="page-btn" onclick="loadData(${currentPage - 1})">Prev</button>`;
+            }
+
+            // Page Numbers (Sliding Window)
+            let startPage = Math.max(1, currentPage - 2);
+            let endPage = Math.min(totalPages, startPage + 4);
+
+            if (endPage - startPage < 4) {
+                startPage = Math.max(1, endPage - 4);
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
                 html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="loadData(${i})">${i}</button>`;
             }
 
-            if (currentPage < totalPages) html += `<button class="page-btn" onclick="loadData(${currentPage + 1})">Next</button>`;
+            // Next Button
+            if (currentPage < totalPages) {
+                html += `<button class="page-btn" onclick="loadData(${currentPage + 1})">Next</button>`;
+            }
+
             pagination.innerHTML = html;
         }
 
@@ -1681,18 +1899,19 @@
                 const result = await res.json();
 
                 if (res.ok) {
-                    alertBox.innerHTML = '<div class="alert alert-success">Instansi berhasil disimpan!</div>';
+                    Swal.fire('Berhasil!', 'Instansi berhasil disimpan!', 'success');
                     e.target.reset();
-                    loadStats();
-                    loadInstansiList();
+                    loadStatistics();
+                    populateFilterDropdowns();
                 }
 
                 else {
-                    alertBox.innerHTML = `<div class="alert alert-error" >${result.detail || 'Gagal menyimpan'}</div>`;
+                    Swal.fire('Gagal!', result.detail || 'Gagal menyimpan', 'error');
                 }
             }
 
             catch (error) {
+                console.error(error);
                 alertBox.innerHTML = '<div class="alert alert-error">Terjadi kesalahan</div>';
             }
         });
@@ -1716,12 +1935,12 @@
                 const result = await res.json();
 
                 if (res.ok) {
-                    alertBox.innerHTML = '<div class="alert alert-success">Unit Kerja berhasil disimpan!</div>';
+                    Swal.fire('Berhasil!', 'Unit Kerja berhasil disimpan!', 'success');
                     e.target.reset();
-                    loadStats();
-                    loadUnitKerjaList();
+                    loadStatistics();
+                    populateFilterDropdowns();
                 } else {
-                    alertBox.innerHTML = `<div class="alert alert-error" >${result.detail || 'Gagal menyimpan'}</div>`;
+                    Swal.fire('Gagal!', result.detail || 'Gagal menyimpan', 'error');
                 }
             } catch (error) {
                 alertBox.innerHTML = '<div class="alert alert-error">Terjadi kesalahan</div>';
@@ -1771,7 +1990,7 @@
                     head.innerHTML = '<tr><th style="text-align:left; padding:10px;">Kode</th><th style="text-align:left; padding:10px;">Nama Instansi</th></tr>';
 
                     try {
-                        const res = await fetch(`${API_BASE}/instansi`);
+                        const res = await fetch(`${API_BASE}/instansi?t=${Date.now()}`);
                         const result = await res.json();
 
                         if (result.data.length === 0) {
@@ -1807,7 +2026,7 @@
                         // Checking previous code: loadUnitsForSelect uses /unit-kerja?instansi_id=...
                         // Let's assume /unit-kerja without params returns all.
 
-                        const res = await fetch(`${API_BASE}/unit-kerja`); // Assuming this endpoint exists for all units
+                        const res = await fetch(`${API_BASE}/unit-kerja?t=${Date.now()}`); // Assuming this endpoint exists for all units
                         // If this endpoint requires instansi_id, we might need a new endpoint or loop through instansi.
                         // Let's try general fetch. If 404/400, we might need to adjust.
 
@@ -1840,15 +2059,15 @@
                 const result = await res.json();
 
                 if (res.ok) {
-                    alertBox.innerHTML = '<div class="alert alert-success">Data berhasil disimpan!</div>';
+                    Swal.fire('Berhasil!', 'Data berhasil disimpan!', 'success');
                     // Reset inputs but keep unit/tanggal? Maybe just reset dynamic inputs
                     dynamicInputs.forEach(input => input.value = '');
-                    loadStats();
+                    loadStatistics();
                     loadData(1);
                 }
 
                 else {
-                    alertBox.innerHTML = `<div class="alert alert-error" >${result.detail || 'Gagal menyimpan'}</div>`;
+                    Swal.fire('Gagal!', result.detail || 'Gagal menyimpan', 'error');
                 }
             }
 
@@ -1904,7 +2123,602 @@
             }
         }
 
+        function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'block';
+            }
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function (event) {
+            if (event.target.classList.contains('modal')) {
+                console.log("Closing modal via outside click:", event.target.id);
+                event.target.style.display = "none";
+            }
+        }
+
+        async function deleteData(id) {
+            const result = await Swal.fire({
+                title: 'Hapus data?',
+                text: "Data yang dihapus tidak dapat dikembalikan!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Ya, Hapus',
+                cancelButtonText: 'Batal'
+            });
+
+            if (!result.isConfirmed) return;
+
+            // Show loading
+            Swal.fire({
+                title: 'Menghapus data...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading() }
+            });
+
+
+            const tableId = document.getElementById('table-selector').value;
+            try {
+                const res = await fetch(`${API_BASE}/tables/${tableId}/data/${id}`, {
+                    method: 'DELETE'
+                });
+                const resJson = await res.json();
+
+                if (res.ok) {
+                    await loadData(currentPage); // Await refresh
+                    await loadStatistics();
+                    Swal.fire('Terhapus!', 'Data berhasil dihapus.', 'success');
+                } else {
+                    Swal.fire('Gagal!', resJson.detail || 'Gagal menghapus data', 'error');
+                }
+            } catch (error) {
+                console.error(error);
+                Swal.fire('Error!', 'Terjadi kesalahan sistem.', 'error');
+            }
+        }
+
+        function editData(rowId) {
+            if (!window.currentTableData || !window.currentTableInfo) return;
+            // Use loose equality for ID matching
+            const row = window.currentTableData.find(d => d.id == rowId);
+            if (!row) return;
+
+            window.editingRowId = rowId;
+            const container = document.getElementById('edit-dynamic-inputs');
+            container.innerHTML = '';
+
+            // Create inputs matching table definition
+            window.currentTableInfo.columns.forEach(col => {
+                const div = document.createElement('div');
+                div.className = 'form-group';
+                div.style.marginBottom = '15px';
+
+                const label = document.createElement('label');
+                label.textContent = col.display_name;
+                label.style.display = 'block';
+                label.style.marginBottom = '5px';
+                label.style.fontWeight = '500';
+
+                let input;
+                const val = row.data ? row.data[col.name] : '';
+
+                if (col.data_type === 'integer') {
+                    input = document.createElement('input');
+                    input.type = 'number';
+                    input.value = val;
+                } else {
+                    input = document.createElement('input');
+                    input.type = 'text';
+                    input.value = val;
+                }
+
+                input.className = 'form-control edit-dynamic-input';
+                input.style.width = '100%';
+                input.style.padding = '8px';
+                input.style.border = '1px solid #ddd';
+                input.style.borderRadius = '4px';
+                input.setAttribute('data-name', col.name);
+
+                if (col.is_required) input.required = true;
+
+                div.appendChild(label);
+                div.appendChild(input);
+                container.appendChild(div);
+            });
+
+            openModal('modal-edit-data');
+        }
+
+        async function saveData() {
+            const tableId = document.getElementById('table-selector').value;
+            const rowId = window.editingRowId;
+            const inputs = document.querySelectorAll('.edit-dynamic-input');
+            const payload = {};
+
+            inputs.forEach(inp => {
+                const name = inp.getAttribute('data-name');
+                const val = inp.value;
+                if (val !== '') payload[name] = isNaN(val) ? val : Number(val);
+                // Note: we treat empty string as empty. If int is 0, it's 0.
+            });
+
+            // Show loading
+            Swal.fire({
+                title: 'Menyimpan perubahan...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading() }
+            });
+
+            try {
+                const res = await fetch(`${API_BASE}/tables/${tableId}/data/${rowId}?_t=${Date.now()}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await res.json();
+
+                if (res.ok) {
+                    Swal.fire({
+                        title: 'DATA TERSIMPAN (VERSI BARU)!',
+                        text: 'Data berhasil diperbarui.',
+                        icon: 'success',
+                        confirmButtonText: 'OK (Refresh)',
+                        allowOutsideClick: false
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire('Gagal!', result.detail || 'Gagal update data', 'error');
+                }
+            } catch (error) {
+                console.error(error);
+                Swal.fire('Error!', 'Terjadi kesalahan sistem.', 'error');
+            }
+        }
+
+
+        // ================= INSTANSI USER CRUD =================
+        async function deleteInstansi(id) {
+            const result = await Swal.fire({
+                title: 'Hapus Instansi?',
+                text: "Semua Unit Kerja dan Data terkait akan ikut terhapus!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Ya, Hapus Semuanya'
+            });
+            if (!result.isConfirmed) return;
+
+            // Show loading
+            Swal.fire({
+                title: 'Menghapus Instansi...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading() }
+            });
+
+            try {
+                const res = await fetch(`${API_BASE}/instansi/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    await showDetailList('instansi'); // Refresh list
+                    await loadStatistics();
+                    populateFilterDropdowns(); // Update dropdowns
+                    Swal.fire('Terhapus', 'Instansi berhasil dihapus', 'success');
+                } else {
+                    const data = await res.json();
+                    Swal.fire('Gagal', data.detail, 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                Swal.fire('Error', 'Terjadi kesalahan sistem', 'error');
+            }
+        }
+
+        function editInstansi(id) {
+            const item = window.detailData.find(i => i.id == id);
+            if (!item) return;
+
+            document.getElementById('edit-instansi-id').value = item.id;
+            document.getElementById('edit-instansi-kode').value = item.kode;
+            document.getElementById('edit-instansi-nama').value = item.nama;
+
+            openModal('modal-edit-instansi');
+        }
+
+        async function saveInstansi() {
+            const id = document.getElementById('edit-instansi-id').value;
+            const kode = document.getElementById('edit-instansi-kode').value;
+            const nama = document.getElementById('edit-instansi-nama').value;
+
+            // Show loading
+            Swal.fire({
+                title: 'Menyimpan perubahan...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading() }
+            });
+
+            try {
+                // Add timestamp to PUT url to bypass any proxy caching
+                const res = await fetch(`${API_BASE}/instansi/${id}?_t=${Date.now()}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ kode, nama })
+                });
+
+                if (res.ok) {
+                    await showDetailList('instansi');
+                    await loadStatistics();
+                    populateFilterDropdowns();
+
+                    Swal.fire({
+                        title: 'DATA TERSIMPAN (VERSI BARU)!',
+                        text: 'Instansi berhasil diperbarui.',
+                        icon: 'success',
+                        confirmButtonText: 'OK (Refresh)',
+                        allowOutsideClick: false
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire('Gagal', 'Gagal update instansi', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                Swal.fire('Error', 'Terjadi kesalahan sistem', 'error');
+            }
+        }
+
+        // ================= UNIT USER CRUD =================
+        async function deleteUnit(id) {
+            const result = await Swal.fire({
+                title: 'Hapus Unit Kerja?',
+                text: "Data arsip terkait unit ini akan terhapus!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Ya, Hapus'
+            });
+            if (!result.isConfirmed) return;
+
+            // Show loading
+            Swal.fire({
+                title: 'Menghapus Unit Kerja...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading() }
+            });
+
+            try {
+                const res = await fetch(`${API_BASE}/unit-kerja/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    await showDetailList('unit');
+                    await loadStatistics();
+                    populateFilterDropdowns();
+                    Swal.fire('Terhapus', 'Unit kerja berhasil dihapus', 'success');
+                } else {
+                    const data = await res.json();
+                    Swal.fire('Gagal', data.detail, 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                Swal.fire('Error', 'Terjadi kesalahan sistem', 'error');
+            }
+        }
+
+        function editUnit(id) {
+            const item = window.detailData.find(i => i.id == id);
+            if (!item) return;
+
+            document.getElementById('edit-unit-id').value = item.id;
+            document.getElementById('edit-unit-kode').value = item.kode;
+            document.getElementById('edit-unit-nama').value = item.nama;
+
+            openModal('modal-edit-unit');
+        }
+
+        async function saveUnit() {
+            const id = document.getElementById('edit-unit-id').value;
+            const kode = document.getElementById('edit-unit-kode').value;
+            const nama = document.getElementById('edit-unit-nama').value;
+
+            // Show loading
+            Swal.fire({
+                title: 'Menyimpan perubahan...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading() }
+            });
+
+            try {
+                const res = await fetch(`${API_BASE}/unit-kerja/${id}?_t=${Date.now()}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ kode, nama })
+                });
+                if (res.ok) {
+                    await showDetailList('unit');
+                    await loadStatistics();
+                    populateFilterDropdowns();
+
+                    Swal.fire({
+                        title: 'DATA TERSIMPAN (VERSI BARU)!',
+                        text: 'Unit Kerja berhasil diperbarui.',
+                        icon: 'success',
+                        confirmButtonText: 'OK (Refresh)',
+                        allowOutsideClick: false
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire('Gagal', 'Gagal update unit kerja', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                Swal.fire('Error', 'Terjadi kesalahan sistem', 'error');
+            }
+        }
+
+
+        /* --- Global Detail Functions --- */
+        async function showDetailList(type) {
+            if (type === 'instansi') {
+                await showInstansiDetail();
+            } else if (type === 'unit') {
+                await showUnitDetail();
+            }
+        }
+
+        async function showInstansiDetail() {
+            document.getElementById('detail-list-title').textContent = "Daftar Instansi";
+            const head = document.getElementById('detail-table-head');
+            const body = document.getElementById('detail-table-body');
+
+            openModal('modal-detail-list');
+            body.innerHTML = '<tr><td colspan="2" class="loading">Memuat data...</td></tr>';
+            head.innerHTML = '<tr><th style="text-align:left; padding:10px;">Kode</th><th style="text-align:left; padding:10px;">Nama Instansi</th><th style="text-align:center; padding:10px;">Aksi</th></tr>';
+
+            try {
+                const res = await fetch(`${API_BASE}/instansi?_t=${Date.now()}`);
+                const result = await res.json();
+                window.detailData = result.data; // Update global data for edit modal
+
+                if (result.data.length === 0) {
+                    body.innerHTML = '<tr><td colspan="3" class="empty-state">Belum ada data instansi</td></tr>';
+                    return;
+                }
+
+                body.innerHTML = result.data.map(i => `
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding:10px;">${i.kode}</td>
+                        <td style="padding:10px;">${i.nama}</td>
+                        <td style="padding:10px; text-align:center; white-space:nowrap;">
+                            <button onclick="editInstansi(${i.id})" style="padding: 6px 12px; background: linear-gradient(135deg, #f39c12, #e67e22); color: white; border: none; border-radius: 6px; cursor: pointer; margin-right: 5px;">
+                                <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:white;vertical-align:middle;"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                            </button><button onclick="deleteInstansi(${i.id})" style="padding: 6px 12px; background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; border: none; border-radius: 6px; cursor: pointer;">
+                                <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:white;vertical-align:middle;"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (e) {
+                body.innerHTML = '<tr><td colspan="2" class="error">Gagal memuat data</td></tr>';
+            }
+        }
+
+        async function showUnitDetail() {
+            document.getElementById('detail-list-title').textContent = "Daftar Unit Kerja";
+            const head = document.getElementById('detail-table-head');
+            const body = document.getElementById('detail-table-body');
+
+            openModal('modal-detail-list');
+            body.innerHTML = '<tr><td colspan="3" class="loading">Memuat data...</td></tr>';
+            head.innerHTML = '<tr><th style="text-align:left; padding:10px;">Instansi</th><th style="text-align:left; padding:10px;">Kode</th><th style="text-align:left; padding:10px;">Nama Unit Kerja</th><th style="text-align:center; padding:10px;">Aksi</th></tr>';
+
+            try {
+                const res = await fetch(`${API_BASE}/unit-kerja?_t=${Date.now()}`);
+                const result = await res.json();
+                window.detailData = result.data; // Update global data for edit modal
+
+                if (result.data.length === 0) {
+                    body.innerHTML = '<tr><td colspan="4" class="empty-state">Belum ada data unit kerja</td></tr>';
+                    return;
+                }
+
+                body.innerHTML = result.data.map(u => {
+                    const instansiName = u.instansi ? u.instansi.nama : '-';
+                    return `
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding:10px;">${instansiName}</td>
+                        <td style="padding:10px;">${u.kode}</td>
+                        <td style="padding:10px;">${u.nama}</td>
+                        <td style="padding:10px; text-align:center; white-space:nowrap;">
+                            <button onclick="editUnit(${u.id})" style="padding: 6px 12px; background: linear-gradient(135deg, #f39c12, #e67e22); color: white; border: none; border-radius: 6px; cursor: pointer; margin-right: 5px;">
+                                <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:white;vertical-align:middle;"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                            </button><button onclick="deleteUnit(${u.id})" style="padding: 6px 12px; background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; border: none; border-radius: 6px; cursor: pointer;">
+                                <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:white;vertical-align:middle;"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                            </button>
+                        </td>
+                    </tr>
+                `}).join('');
+            } catch (e) {
+                console.error(e);
+                body.innerHTML = '<tr><td colspan="3" class="error">Gagal memuat data</td></tr>';
+            }
+        }
+
+        async function submitCreateTable() {
+            const displayName = document.getElementById('new-table-display').value;
+
+            if (!displayName) {
+                Swal.fire('Peringatan', 'Nama tabel harus diisi', 'warning');
+                return;
+            }
+
+            const desc = document.getElementById('new-table-desc').value;
+
+            // Build columns
+            const rows = document.querySelectorAll('.column-builder-row');
+            const columns = [];
+
+            rows.forEach((row, index) => {
+                const label = row.querySelector('.col-name').value;
+                if (!label) return;
+
+                const type = row.querySelector('.col-type').value;
+                const isSum = row.querySelector('.col-sum').checked;
+
+                // Simple slugify for internal name
+                const name = label.toLowerCase().replace(/[^a-z0-9]/g, '_');
+
+                columns.push({
+                    name: name, // Removed random suffix
+                    display_name: label,
+                    data_type: type,
+                    is_summable: isSum,
+                    order: index
+                });
+            });
+
+            if (columns.length === 0) {
+                Swal.fire('Peringatan', 'Minimal satu kolom harus ditambahkan', 'warning');
+                return;
+            }
+
+            const payload = {
+                name: displayName.toLowerCase().replace(/[^a-z0-9]/g, '_'), // Removed random suffix
+                display_name: displayName,
+                description: desc,
+                columns: columns
+            };
+
+            const confirmResult = await Swal.fire({
+                title: 'Buat tabel baru?',
+                text: "Pastikan data sudah benar",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Buat',
+                cancelButtonText: 'Batal'
+            });
+
+            if (!confirmResult.isConfirmed) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/tables`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const result = await res.json();
+
+                if (res.ok) {
+                    Swal.fire('Berhasil!', 'Tabel berhasil dibuat!', 'success');
+                    closeModal('modal-create-table');
+                    manageTables(); // Reopen list
+                    loadTableList(); // Reload dropdown in dashboard
+                } else {
+                    Swal.fire('Gagal!', result.message || result.detail, 'error');
+                }
+            }
+
+            catch (e) {
+                console.error(e);
+                Swal.fire('Error', 'Terjadi kesalahan sistem', 'error');
+            }
+        }
     </script>
+
+    <!-- Edit Data Modal -->
+    <div id="modal-edit-data" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2>Edit Data</h2>
+                <span class="close" onclick="closeModal('modal-edit-data')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="form-edit-data">
+                    <div id="edit-dynamic-inputs">
+                        <!-- Inputs injected here -->
+                    </div>
+                    <div class="form-actions" style="margin-top: 20px; text-align: right;">
+                        <button type="button" class="btn-cancel" onclick="closeModal('modal-edit-data')"
+                            style="margin-right: 10px; padding: 8px 16px; border: 1px solid #ddd; background: #fff; border-radius: 4px; cursor: pointer;">Batal</button>
+                        <button type="button" class="btn-submit" onclick="saveData()"
+                            style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Simpan
+                            Perubahan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Edit Instansi -->
+    <div id="modal-edit-instansi" class="modal">
+        <div class="modal-content" style="max-width: 500px">
+            <div class="modal-header">
+                <h2>Edit Instansi</h2>
+                <span class="close" onclick="closeModal('modal-edit-instansi')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="form-edit-instansi">
+                    <input type="hidden" id="edit-instansi-id">
+                    <div class="form-group">
+                        <label>Kode Instansi</label>
+                        <input type="text" id="edit-instansi-kode" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Nama Instansi</label>
+                        <input type="text" id="edit-instansi-nama" class="form-control" required>
+                    </div>
+                    <div style="text-align: right; margin-top: 20px;">
+                        <button type="button" class="btn-cancel" onclick="closeModal('modal-edit-instansi')"
+                            style="margin-right: 10px; padding: 8px 16px; border: 1px solid #ddd; background: #fff; border-radius: 4px; cursor: pointer;">Batal</button>
+                        <button type="button" class="btn-submit" onclick="saveInstansi()"
+                            style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Simpan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Edit Unit -->
+    <div id="modal-edit-unit" class="modal">
+        <div class="modal-content" style="max-width: 500px">
+            <div class="modal-header">
+                <h2>Edit Unit Kerja</h2>
+                <span class="close" onclick="closeModal('modal-edit-unit')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="form-edit-unit">
+                    <input type="hidden" id="edit-unit-id">
+                    <div class="form-group">
+                        <label>Kode Unit</label>
+                        <input type="text" id="edit-unit-kode" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Nama Unit</label>
+                        <input type="text" id="edit-unit-nama" class="form-control" required>
+                    </div>
+                    <div style="text-align: right; margin-top: 20px;">
+                        <button type="button" class="btn-cancel" onclick="closeModal('modal-edit-unit')"
+                            style="margin-right: 10px; padding: 8px 16px; border: 1px solid #ddd; background: #fff; border-radius: 4px; cursor: pointer;">Batal</button>
+                        <button type="button" class="btn-submit" onclick="saveUnit()"
+                            style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Simpan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>

@@ -8,6 +8,7 @@ from sqlalchemy.orm import joinedload
 
 from app.database import get_db_context
 from app.models.arsip_models import Instansi, UnitKerja, DataArsip
+from app.services.cache_service import cache
 
 
 class DataService:
@@ -48,6 +49,11 @@ class DataService:
                 db.add(instansi)
                 db.commit()
                 db.refresh(instansi)
+                
+                # Invalidate dashboard stats
+                cache.invalidate_prefix("stats_table")
+                cache.delete("dashboard_stats")
+                
                 return {"status": "success", "data": instansi.to_dict()}
             except Exception as e:
                 db.rollback()
@@ -61,6 +67,7 @@ class DataService:
                 if not instansi:
                     return {"status": "error", "message": "Instansi tidak ditemukan"}
                 
+                print(f"[DEBUG] Updating Instansi ID {instansi_id}: Kode={kode}, Nama={nama}")
                 if kode:
                     instansi.kode = kode
                 if nama:
@@ -68,6 +75,12 @@ class DataService:
                 
                 db.commit()
                 db.refresh(instansi)
+                print(f"[DEBUG] Commit Successful. New Name: {instansi.nama}")
+                
+                # Invalidate dashboard stats
+                cache.invalidate_prefix("stats_table")
+                cache.delete("dashboard_stats")
+                
                 return {"status": "success", "data": instansi.to_dict()}
             except Exception as e:
                 db.rollback()
@@ -83,6 +96,11 @@ class DataService:
                 
                 db.delete(instansi)
                 db.commit()
+                
+                # Invalidate dashboard stats
+                cache.invalidate_prefix("stats_table")
+                cache.delete("dashboard_stats")
+                
                 return {"status": "success", "message": f"Instansi {instansi.nama} berhasil dihapus"}
             except Exception as e:
                 db.rollback()
@@ -138,6 +156,45 @@ class DataService:
                 db.add(unit)
                 db.commit()
                 db.refresh(unit)
+                
+                # Invalidate dashboard stats
+                cache.invalidate_prefix("stats_table")
+                cache.delete("dashboard_stats")
+                
+                return {"status": "success", "data": unit.to_dict()}
+            except Exception as e:
+                db.rollback()
+                return {"status": "error", "message": str(e)}
+
+    def update_unit_kerja(self, unit_id: int, kode: str = None, nama: str = None) -> Dict[str, Any]:
+        """Update unit kerja"""
+        with get_db_context() as db:
+            try:
+                unit = db.query(UnitKerja).filter(UnitKerja.id == unit_id).first()
+                if not unit:
+                    return {"status": "error", "message": "Unit kerja tidak ditemukan"}
+                
+                if kode:
+                    # Check duplicate if kode changed
+                    if kode != unit.kode:
+                        existing = db.query(UnitKerja).filter(
+                            UnitKerja.instansi_id == unit.instansi_id,
+                            UnitKerja.kode == kode
+                        ).first()
+                        if existing:
+                            return {"status": "error", "message": f"Kode unit kerja '{kode}' sudah ada di instansi ini"}
+                    unit.kode = kode
+                
+                if nama:
+                    unit.nama = nama
+                
+                db.commit()
+                db.refresh(unit)
+                
+                # Invalidate dashboard stats
+                cache.invalidate_prefix("stats_table")
+                cache.delete("dashboard_stats")
+                
                 return {"status": "success", "data": unit.to_dict()}
             except Exception as e:
                 db.rollback()
@@ -153,6 +210,11 @@ class DataService:
                 
                 db.delete(unit)
                 db.commit()
+                
+                # Invalidate dashboard stats
+                cache.invalidate_prefix("stats_table")
+                cache.delete("dashboard_stats")
+                
                 return {"status": "success", "message": f"Unit kerja {unit.nama} berhasil dihapus"}
             except Exception as e:
                 db.rollback()
@@ -251,6 +313,11 @@ class DataService:
                 
                 db.commit()
                 db.refresh(data)
+                
+                # Invalidate
+                cache.invalidate_prefix("stats_table")
+                cache.delete("dashboard_stats")
+                
                 return {"status": "success", "data": data.to_dict()}
             except Exception as e:
                 db.rollback()
@@ -266,6 +333,11 @@ class DataService:
                 
                 db.delete(data)
                 db.commit()
+                
+                # Invalidate
+                cache.invalidate_prefix("stats_table")
+                cache.delete("dashboard_stats")
+                
                 return {"status": "success", "message": "Data berhasil dihapus"}
             except Exception as e:
                 db.rollback()
@@ -274,7 +346,12 @@ class DataService:
     # ==================== STATISTICS ====================
     
     def get_statistics(self) -> Dict[str, Any]:
-        """Get dashboard statistics"""
+        """Get dashboard statistics (Cached)"""
+        # Try cache
+        cached = cache.get("dashboard_stats")
+        if cached:
+            return cached
+
         with get_db_context() as db:
             total_instansi = db.query(func.count(Instansi.id)).scalar() or 0
             total_unit_kerja = db.query(func.count(UnitKerja.id)).scalar() or 0
@@ -291,7 +368,7 @@ class DataService:
                 func.sum(DataArsip.total).label('total')
             ).first()
             
-            return {
+            result = {
                 "total_instansi": total_instansi,
                 "total_unit_kerja": total_unit_kerja,
                 "total_naskah_masuk": totals.naskah_masuk or 0,
@@ -303,6 +380,10 @@ class DataService:
                 "total_naskah_ditindaklanjuti": totals.naskah_ditindaklanjuti or 0,
                 "grand_total": totals.total or 0
             }
+            
+            # Save to cache (1 hour TTL)
+            cache.set("dashboard_stats", result, ttl=3600)
+            return result
     
     def get_summary_by_instansi(self) -> List[Dict]:
         """Get summary grouped by instansi"""

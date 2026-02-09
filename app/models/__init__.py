@@ -4,7 +4,7 @@ Models package for SPLP Data Integrator
 from app.database import Base
 from app.models.arsip_models import Instansi, UnitKerja, DataArsip
 
-from app.models.table_models import TableDefinition, ColumnDefinition, DynamicData
+from app.models.table_models import TableDefinition, ColumnDefinition
 
 # Backward compatibility aliases
 # The old ArsipData is replaced by the new DataArsip structure
@@ -20,5 +20,5 @@ __all__ = [
     "ArsipData",
     "TableDefinition",
     "ColumnDefinition",
-    "DynamicData"
+
 ]

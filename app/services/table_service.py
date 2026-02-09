@@ -55,6 +55,52 @@ class TableService:
                 return table.to_dict(include_columns=True)
             return None
     
+    
+    def register_existing_table(self, name: str, display_name: str, description: str = None, columns: List[Dict] = []) -> Dict[str, Any]:
+        """Register EXISTING physical table (metadata only, NO DDL)"""
+        # Name is already safe because it comes from SchemaInspector which reads actual DB tables
+        
+        with get_db_context() as db:
+            try:
+                # 1. Metadata: Check duplicate
+                existing = db.query(TableDefinition).filter(TableDefinition.name == name).first()
+                if existing:
+                    return {"status": "error", "message": f"Tabel '{name}' sudah terdaftar"}
+                
+                # Metadata: Create record
+                count = db.query(TableDefinition).count()
+                is_default = (count == 0)
+                
+                table = TableDefinition(
+                    name=name,
+                    display_name=display_name,
+                    description=description,
+                    is_default=is_default
+                )
+                db.add(table)
+                db.flush() 
+                
+                # Metadata: Add columns
+                for i, col in enumerate(columns):
+                    column = ColumnDefinition(
+                        table_id=table.id,
+                        name=col['name'],
+                        display_name=col['display_name'],
+                        data_type=col.get('data_type', 'integer'),
+                        is_required=col.get('is_required', False),
+                        is_summable=col.get('is_summable', True),
+                        order=i
+                    )
+                    db.add(column)
+                
+                db.commit()
+                db.refresh(table)
+                return {"status": "success", "data": table.to_dict(include_columns=True)}
+                
+            except Exception as e:
+                db.rollback()
+                return {"status": "error", "message": f"Gagal mendaftarkan tabel: {str(e)}"}
+
     def create_table(self, name: str, display_name: str, description: str = None, columns: List[Dict] = []) -> Dict[str, Any]:
         """Create new PHYSICAL table and metadata"""
         safe_name = self._sanitize_name(name)
@@ -445,6 +491,7 @@ class TableService:
                 # Invalidate cache
                 cache.invalidate_prefix(f"stats_table")
                 cache.delete(f"total_count_{table_id}")
+                cache.delete("dashboard_stats")
                 
                 return {"status": "success", "data": {"total": total}}
                 
@@ -512,6 +559,7 @@ class TableService:
                     # Invalidate cache
                     cache.invalidate_prefix(f"stats_table")
                     cache.delete(f"total_count_{table_id}")
+                    cache.delete("dashboard_stats")
                     return {"status": "success", "action": "updated"}
                     
                 else:
@@ -543,6 +591,7 @@ class TableService:
                     # Invalidate cache
                     cache.invalidate_prefix(f"stats_table")
                     cache.delete(f"total_count_{table_id}")
+                    cache.delete("dashboard_stats")
                     
                     return {"status": "success", "action": "inserted"}
 
@@ -559,5 +608,113 @@ class TableService:
         else:
             with get_db_context() as session:
                 return _process(session, table_obj)
+
+
+    def update_dynamic_data(self, table_id: int, row_id: int, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Update specific row in PHYSICAL table"""
+        with get_db_context() as db:
+            try:
+                table = db.query(TableDefinition).options(joinedload(TableDefinition.columns)).filter(TableDefinition.id == table_id).first()
+                if not table:
+                    return {"status": "error", "message": "Tabel tidak ditemukan"}
+                
+                safe_name = self._sanitize_name(table.name)
+                
+                # Check existing record
+                check_sql = f"SELECT id FROM {safe_name} WHERE id = :id"
+                existing = db.execute(text(check_sql), {"id": row_id}).first()
+                if not existing:
+                    return {"status": "error", "message": "Data tidak ditemukan"}
+                
+                # Prepare Update
+                update_sets = []
+                params = {"id": row_id}
+                new_total = 0
+                
+                # Fetch current data for summable calc
+                sel_cols = [self._sanitize_name(c.name) for c in table.columns]
+                # Handle empty columns case
+                if not sel_cols:
+                    pass 
+                else: 
+                     sel_sql = f"SELECT {', '.join(sel_cols)} FROM {safe_name} WHERE id = :id"
+                     current_data = dict(db.execute(text(sel_sql), {"id": row_id}).mappings().first())
+                
+                for col in table.columns:
+                    safe_col = self._sanitize_name(col.name)
+                    # Use new value if provided, else old value
+                    val = data.get(col.name)
+                    
+                    if val is not None: # Only update if provided
+                        params[safe_col] = val
+                        update_sets.append(f"{safe_col} = :{safe_col}")
+                        
+                        if col.is_summable and col.data_type == 'integer':
+                            try: new_total += int(val)
+                            except: pass
+                    else:
+                        # Keep old value for total calc
+                        if col.is_summable and col.data_type == 'integer':
+                            try: new_total += int(current_data.get(safe_col) or 0)
+                            except: pass
+
+                # Always update updated_at if possible
+                update_sets.append("updated_at = :now")
+                params["now"] = datetime.utcnow()
+                
+                if update_sets:
+                    # Update total if we have summable columns
+                    # Wait, if we use partially new total, we need to be careful.
+                    # Simpler approach: Recalculate total from ALL columns (old properties + new properties)
+                    
+                    final_total = 0
+                    for col in table.columns:
+                        safe_col = self._sanitize_name(col.name)
+                        val = data.get(col.name, current_data.get(safe_col))
+                        if col.is_summable and col.data_type == 'integer':
+                            try: final_total += int(val or 0)
+                            except: pass
+                    
+                    update_sets.append("total = :total")
+                    params["total"] = final_total
+                    
+                    sql = f"UPDATE {safe_name} SET {', '.join(update_sets)} WHERE id = :id"
+                    db.execute(text(sql), params)
+                    db.commit()
+                
+                # Invalidate cache
+                cache.invalidate_prefix(f"stats_table")
+                cache.delete(f"total_count_{table_id}")
+                cache.delete("dashboard_stats")
+                
+                return {"status": "success", "message": "Data berhasil diupdate"}
+                
+            except Exception as e:
+                db.rollback()
+                return {"status": "error", "message": str(e)}
+
+    def delete_dynamic_data(self, table_id: int, row_id: int) -> Dict[str, Any]:
+        """Delete specific row from PHYSICAL table"""
+        with get_db_context() as db:
+            try:
+                table = db.query(TableDefinition).filter(TableDefinition.id == table_id).first()
+                if not table:
+                    return {"status": "error", "message": "Tabel tidak ditemukan"}
+                
+                safe_name = self._sanitize_name(table.name)
+                
+                sql = f"DELETE FROM {safe_name} WHERE id = :id"
+                result = db.execute(text(sql), {"id": row_id})
+                db.commit()
+                
+                # Invalidate cache
+                cache.invalidate_prefix(f"stats_table")
+                cache.delete(f"total_count_{table_id}")
+                cache.delete("dashboard_stats")
+                
+                return {"status": "success", "message": "Data berhasil dihapus"}
+            except Exception as e:
+                db.rollback()
+                return {"status": "error", "message": str(e)}
 
 table_service = TableService()

@@ -186,7 +186,7 @@ class CacheService:
     def _generate_key(self, prefix: str, *args, **kwargs) -> str:
         """Generate unique cache key from function arguments"""
         key_data = f"{prefix}:{json.dumps(args, default=str)}:{json.dumps(kwargs, sort_keys=True, default=str)}"
-        return hashlib.md5(key_data.encode()).hexdigest()
+        return f"{prefix}:{hashlib.md5(key_data.encode()).hexdigest()}"
     
     def get(self, key: str) -> Optional[Any]:
         """Get value from cache"""

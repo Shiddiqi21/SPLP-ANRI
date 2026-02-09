@@ -8,7 +8,7 @@ import pandas as pd
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from app.models.arsip_models import Instansi, UnitKerja 
-from app.models.table_models import TableDefinition, ColumnDefinition, DynamicData
+from app.models.table_models import TableDefinition, ColumnDefinition
 from app.services.table_service import table_service
 
 class UploadService:
