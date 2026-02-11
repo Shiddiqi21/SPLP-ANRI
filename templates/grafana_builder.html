@@ -323,6 +323,19 @@
                     </div>
                 </div>
 
+                <!-- Global Mode Switch -->
+                <div class="mb-4 p-3" style="background: #fff8e1; border-left: 4px solid #FF9800; border-radius: 4px;">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="grafanaVarMode" checked
+                            style="accent-color: #FF9800;" onchange="toggleMode()">
+                        <label class="form-check-label" for="grafanaVarMode" style="font-weight: 600; color: #d68100;">
+                            🔗 Mode Grafana Variable <span class="small-text"
+                                style="font-weight: normal; color: #666;">(Aktifkan ini agar URL menggunakan variable
+                                dashboard <code>${instansi}</code>, <code>${unit_kerja}</code>, dll)</span>
+                        </label>
+                    </div>
+                </div>
+
                 <hr class="section-divider">
 
                 <!-- Step 2: Pilih Kolom -->
@@ -345,10 +358,10 @@
                         kolom</p>
                 </div>
 
-                <hr class="section-divider">
+                <hr class="section-divider" id="dividerTable">
 
                 <!-- Step 3: Pilih Tahun -->
-                <div class="mb-4">
+                <div class="mb-4" id="stepYear">
                     <label class="form-label">
                         <span class="step-number">3</span>
                         <i class="bi bi-calendar"></i> Pilih Tahun
@@ -361,12 +374,37 @@
                     </select>
                 </div>
 
-                <hr class="section-divider">
+                <hr class="section-divider" id="dividerYear">
 
-                <!-- Step 4: Pilih Bulan -->
-                <div class="mb-4">
+                <!-- Step 4: Filter Instansi -->
+                <div class="mb-4" id="stepInstansi">
                     <label class="form-label">
                         <span class="step-number">4</span>
+                        <i class="bi bi-building"></i> Filter Instansi <span class="small-text">(Opsional)</span>
+                    </label>
+                    <select class="form-select" id="instansiSelect" style="max-width: 400px; margin-left: 38px;"
+                        onchange="onInstansiChange()"></select>
+                </div>
+
+                <hr class="section-divider" id="dividerInstansi">
+
+                <!-- Step 5: Filter Unit Kerja -->
+                <div class="mb-4" id="stepUnitKerja">
+                    <label class="form-label">
+                        <span class="step-number">5</span>
+                        <i class="bi bi-diagram-3"></i> Filter Unit Kerja <span class="small-text">(Opsional)</span>
+                    </label>
+                    <select class="form-select" id="unitKerjaSelect" style="max-width: 400px; margin-left: 38px;">
+                        <option value="">Semua Unit Kerja</option>
+                    </select>
+                </div>
+
+                <hr class="section-divider" id="dividerUnitKerja">
+
+                <!-- Step 6: Pilih Bulan -->
+                <div class="mb-4" id="stepBulan">
+                    <label class="form-label">
+                        <span class="step-number">6</span>
                         <i class="bi bi-calendar-month"></i> Pilih Bulan <span class="small-text">(Opsional - kosongkan
                             untuk semua bulan)</span>
                     </label>
@@ -422,12 +460,12 @@
                     </div>
                 </div>
 
-                <hr class="section-divider">
+                <hr class="section-divider" id="dividerBulan">
 
-                <!-- Step 5: Opsi -->
+                <!-- Step 7: Opsi -->
                 <div class="mb-4">
                     <label class="form-label">
-                        <span class="step-number">5</span>
+                        <span class="step-number">7</span>
                         <i class="bi bi-gear"></i> Opsi Tampilan
                     </label>
                     <div style="margin-left: 38px;">
@@ -435,6 +473,18 @@
                             <input class="form-check-input" type="checkbox" id="useDisplayName" checked>
                             <label class="form-check-label" for="useDisplayName">
                                 Gunakan nama tampilan (Display Name) dari sistem
+                            </label>
+                        </div>
+                        <div class="form-check" style="margin-top: 8px;">
+                            <!-- Moved to top -->
+                        </div>
+                        <div class="form-check" style="margin-top: 8px;">
+                            <input class="form-check-input" type="checkbox" id="excludeMeta"
+                                style="accent-color: #E91E63;">
+                            <label class="form-check-label" for="excludeMeta" style="font-weight: 600; color: #E91E63;">
+                                🥧 Exclude Bulan dari response <span class="small-text"
+                                    style="font-weight: normal; color: #666;">(centang ini untuk Pie Chart agar field
+                                    Bulan tidak muncul)</span>
                             </label>
                         </div>
                     </div>
@@ -460,7 +510,9 @@
                             <i class="bi bi-clipboard"></i> Salin
                         </button>
                     </div>
-
+                    <div id="modeInfo"
+                        style="display: none; margin-top: 10px; padding: 10px 15px; border-radius: 6px; background: #fff8e1; border-left: 4px solid #FF9800; font-size: 13px;">
+                    </div>
                     <div class="preview-box">
                         <strong><i class="bi bi-eye"></i> Preview Data</strong>
                         <p class="small-text mb-2">Klik untuk melihat data di tab baru sebelum paste ke Grafana</p>
@@ -486,6 +538,49 @@
                     <li>Pilih tipe visualisasi (Bar Chart, Pie, dll)</li>
                     <li>Klik <strong>Apply</strong></li>
                 </ol>
+
+                <hr style="margin: 15px 0; border-color: #e0e0e0;">
+
+                <h5 style="color: #0288D1; margin-bottom: 10px;">
+                    <i class="bi bi-sliders"></i> Setup Variable Filter di Grafana
+                </h5>
+                <p class="small-text" style="margin-bottom: 10px;">Buat Dashboard Variables di Grafana: <strong>Settings
+                        → Variables → Add Variable</strong></p>
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                    <tr style="background: #f0f7ff;">
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Variable</th>
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">URL (Infinity JSON)</th>
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">JSONPath</th>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong>Instansi</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; font-size: 12px;">
+                            /api/stats/instansi</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; font-size: 12px;">
+                            $.instansi[*]</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong>Unit Kerja</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; font-size: 12px;">
+                            /api/stats/unit-kerja?instansi_id=${instansi}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; font-size: 12px;">
+                            $.unit_kerja[*]</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong>Bulan</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; font-size: 12px;">
+                            /api/stats/months</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; font-size: 12px;">
+                            $.months[*]</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong>Tahun</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; font-size: 12px;">
+                            /api/stats/grafana/var/tahun</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; font-size: 12px;">
+                            $.value</td>
+                    </tr>
+                </table>
             </div>
         </div>
     </div>
@@ -495,7 +590,42 @@
         let allTables = [];
         let allColumns = {};
 
-        document.addEventListener('DOMContentLoaded', loadTables);
+        document.addEventListener('DOMContentLoaded', () => {
+            // Auth check
+            if (!localStorage.getItem('access_token')) {
+                window.location.href = '/login';
+                return;
+            }
+            loadTables();
+            loadInstansi();
+            loadUnitKerja();
+            toggleMode(); // Init mode
+        });
+
+        function toggleMode() {
+            const isVarMode = document.getElementById('grafanaVarMode').checked;
+
+            // Hide/Show sections based on mode
+            const displayStyle = isVarMode ? 'none' : 'block';
+
+            // IDs of the container divs for Steps 3, 4, 5, 6
+            // We need to add IDs to the parent divs of these inputs in the HTML first
+            // But since they don't have IDs yet, let's use a class or add IDs.
+            // Actually, I should update the HTML to add IDs to the section containers first.
+            // Let's assume I will add IDs: stepYear, stepInstansi, stepUnitKerja, stepBulan
+
+            document.getElementById('stepYear').style.display = displayStyle;
+            document.getElementById('stepInstansi').style.display = displayStyle;
+            document.getElementById('stepUnitKerja').style.display = displayStyle;
+            document.getElementById('stepBulan').style.display = displayStyle;
+            document.getElementById('dividerYear').style.display = displayStyle;
+            document.getElementById('dividerInstansi').style.display = displayStyle;
+            document.getElementById('dividerUnitKerja').style.display = displayStyle;
+            document.getElementById('dividerBulan').style.display = displayStyle;
+
+            // Close URL if open to avoid stale data
+            document.getElementById('resultSection').style.display = 'none';
+        }
 
         async function loadTables() {
             try {
@@ -598,6 +728,9 @@
             const tableIds = Array.from(checkedTables).map(cb => cb.value);
             const year = document.getElementById('yearSelect').value;
             const useDisplayName = document.getElementById('useDisplayName').checked;
+            const grafanaVarMode = document.getElementById('grafanaVarMode').checked;
+            const instansiId = document.getElementById('instansiSelect').value;
+            const unitKerjaId = document.getElementById('unitKerjaSelect').value;
 
             // Get selected months
             const checkedMonths = document.querySelectorAll('.month-checkbox:checked');
@@ -605,30 +738,71 @@
 
             let url;
             if (tableIds.length === 1) {
-                url = `${BASE_URL}/api/stats/grafana/monthly?table_id=${tableIds[0]}&year=${year}&use_display_name=${useDisplayName}`;
+                url = `/api/stats/grafana/monthly?table_id=${tableIds[0]}&year=${year}&use_display_name=${useDisplayName}`;
 
                 const checkedCols = document.querySelectorAll('.column-checkbox:checked');
                 if (checkedCols.length > 0) {
                     const cols = Array.from(checkedCols).map(cb => cb.value).join(',');
                     url += `&columns=${cols}`;
                 }
-
-                // Add months filter if selected
-                if (months.length > 0) {
-                    url += `&months=${months.join(',')}`;
-                }
             } else {
-                url = `${BASE_URL}/api/stats/grafana/combined?table_ids=${tableIds.join(',')}&year=${year}&use_display_name=${useDisplayName}`;
+                url = `/api/stats/grafana/combined?table_ids=${tableIds.join(',')}&year=${year}&use_display_name=${useDisplayName}`;
+            }
 
-                // Add months filter if selected
-                if (months.length > 0) {
-                    url += `&months=${months.join(',')}`;
+            // Add filters based on mode
+            if (grafanaVarMode) {
+                // Grafana Variable Mode: use ${variable} syntax
+                url += '&year=${tahun}&instansi_id=${instansi}&unit_kerja_id=${unit_kerja}';
+            } else {
+                // Static Mode: use actual selected values
+                url += `&year=${year}`;
+                if (instansiId) {
+                    url += `&instansi_id=${instansiId}`;
+                }
+                if (unitKerjaId) {
+                    url += `&unit_kerja_id=${unitKerjaId}`;
                 }
             }
 
+            // Add months filter
+            if (grafanaVarMode) {
+                url += '&months=${bulan}';
+            } else if (months.length > 0) {
+                url += `&months=${months.join(',')}`;
+            }
+
+            // Add exclude_meta if checked (for pie chart)
+            const excludeMeta = document.getElementById('excludeMeta').checked;
+            if (excludeMeta) {
+                url += '&exclude_meta=true';
+            }
+
+            // Show the URL
             document.getElementById('generatedUrl').textContent = url;
-            document.getElementById('previewLink').href = url;
+
+            // Preview link uses actual values (not Grafana variables)
+            let previewUrl = url;
+            if (grafanaVarMode) {
+                previewUrl = previewUrl.replace('${instansi}', instansiId || '');
+                previewUrl = previewUrl.replace('${unit_kerja}', unitKerjaId || '');
+                previewUrl = previewUrl.replace('${bulan}', months.length > 0 ? months.join(',') : '');
+            }
+            document.getElementById('previewLink').href = BASE_URL + previewUrl;
+
             document.getElementById('resultSection').style.display = 'block';
+
+            // Show mode info
+            const modeInfo = document.getElementById('modeInfo');
+            if (modeInfo) {
+                if (grafanaVarMode) {
+                    modeInfo.innerHTML = '<span style="color:#FF9800;">🔗 <strong>Mode Grafana Variable</strong></span> — URL ini menggunakan <code>${instansi}</code> dan <code>${unit_kerja}</code>. Paste langsung ke panel Grafana, dropdown akan otomatis terhubung!';
+                    modeInfo.style.display = 'block';
+                } else {
+                    modeInfo.innerHTML = '<span style="color:#0288D1;">📌 <strong>Mode Static</strong></span> — URL ini menggunakan filter tetap. Data tidak berubah saat dropdown Grafana diganti.';
+                    modeInfo.style.display = 'block';
+                }
+            }
+
             document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' });
         }
 
@@ -644,6 +818,45 @@
                     btn.style.background = '#0288D1';
                 }, 2000);
             });
+        }
+
+        // Load Instansi list
+        async function loadInstansi() {
+            try {
+                const res = await fetch(`${BASE_URL}/api/stats/instansi`);
+                const data = await res.json();
+                const select = document.getElementById('instansiSelect');
+                select.innerHTML = '<option value="">Semua Instansi</option>';
+                (data.instansi || []).forEach(i => {
+                    select.innerHTML += `<option value="${i.id}">${i.nama}</option>`;
+                });
+            } catch (e) {
+                console.error('Gagal memuat instansi:', e);
+            }
+        }
+
+        // Load Unit Kerja list (chained to instansi)
+        async function loadUnitKerja(instansiId) {
+            try {
+                let url = `${BASE_URL}/api/stats/unit-kerja`;
+                if (instansiId) url += `?instansi_id=${instansiId}`;
+                const res = await fetch(url);
+                const data = await res.json();
+                const select = document.getElementById('unitKerjaSelect');
+                select.innerHTML = '<option value="">Semua Unit Kerja</option>';
+                (data.unit_kerja || []).forEach(u => {
+                    const label = u.instansi_nama ? `${u.nama} (${u.instansi_nama})` : u.nama;
+                    select.innerHTML += `<option value="${u.id}">${label}</option>`;
+                });
+            } catch (e) {
+                console.error('Gagal memuat unit kerja:', e);
+            }
+        }
+
+        // When instansi changes, reload unit kerja
+        function onInstansiChange() {
+            const instansiId = document.getElementById('instansiSelect').value;
+            loadUnitKerja(instansiId);
         }
     </script>
 </body>

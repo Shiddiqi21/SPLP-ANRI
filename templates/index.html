@@ -956,13 +956,16 @@
         let currentTableId = null;
 
         document.addEventListener('DOMContentLoaded', () => {
-            // Check session
+            // Check session - redirect to login if no token
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
+
             const user = localStorage.getItem('user');
             if (user) {
                 document.getElementById('username').textContent = JSON.parse(user).username;
-            } else {
-                // If checking token presence is needed:
-                // if(!localStorage.getItem('token')) window.location.href = '/login';
             }
 
             // Default date to Today for performance
