@@ -224,7 +224,7 @@ def get_grafana_monthly(
         sql = f"""
             SELECT 
                 t.month as bulan,
-                MONTHNAME(STR_TO_DATE(CONCAT('2024-',t.month,'-01'), '%Y-%m-%d')) as nama_bulan,
+                MONTHNAME(STR_TO_DATE(CONCAT(t.month, '-01'), '%Y-%m-%d')) as nama_bulan,
                 {', '.join(sum_expressions).replace('MONTH(t.tanggal)', 't.month')}
             FROM {safe_table_name} t
             {join_clause}
