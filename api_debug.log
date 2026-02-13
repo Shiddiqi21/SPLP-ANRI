@@ -1,0 +1,169 @@
+DEBUG API: SQL Query: 
+            SELECT 
+                MONTH(t.tanggal) as bulan,
+                MONTHNAME(t.tanggal) as nama_bulan,
+                COALESCE(SUM(t.naskah_masuk), 0) as `naskah_masuk`, COALESCE(SUM(t.naskah_keluar), 0) as `naskah_keluar`, COALESCE(SUM(t.disposisi), 0) as `disposisi`, COALESCE(SUM(t.berkas), 0) as `berkas`, COALESCE(SUM(t.retensi_permanen), 0) as `retensi_permanen`, COALESCE(SUM(t.retensi_musnah), 0) as `retensi_musnah`, COALESCE(SUM(t.naskah_ditindaklanjuti), 0) as `naskah_ditindaklanjuti`, COALESCE(SUM(t.total), 0) as total
+            FROM data_arsip t
+            LEFT JOIN unit_kerja u ON t.unit_kerja_id = u.id
+            WHERE ((t.tanggal >= '2026-01-01' AND t.tanggal <= '2026-12-31') OR (t.tanggal >= '2025-01-01' AND t.tanggal <= '2025-12-31') OR (t.tanggal >= '2024-01-01' AND t.tanggal <= '2024-12-31')) AND MONTH(t.tanggal) IN (1,2,3,4,5,6,7,8,9,10,11,12) AND u.instansi_id IN (1,6,7) AND t.unit_kerja_id IN (22,23,24,25,26,1,2,3,27,28,29,30,31,32,4,33,34,35,36,5,37,6,38,7,39,40,8,9,41,42,10,43,44,45,11,12,13,14,46,15,47,48,49,16,50,17,51,18,52,53,54,55,19,20,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,79,80,21)
+            GROUP BY MONTH(t.tanggal), MONTHNAME(t.tanggal)
+            ORDER BY bulan
+        
+DEBUG API: Params: {}
+DEBUG API: SQL Query: 
+            SELECT 
+                MONTH(t.tanggal) as bulan,
+                MONTHNAME(t.tanggal) as nama_bulan,
+                COALESCE(SUM(t.naskah_masuk), 0) as `naskah_masuk`, COALESCE(SUM(t.naskah_keluar), 0) as `naskah_keluar`, COALESCE(SUM(t.disposisi), 0) as `disposisi`, COALESCE(SUM(t.berkas), 0) as `berkas`, COALESCE(SUM(t.retensi_permanen), 0) as `retensi_permanen`, COALESCE(SUM(t.retensi_musnah), 0) as `retensi_musnah`, COALESCE(SUM(t.naskah_ditindaklanjuti), 0) as `naskah_ditindaklanjuti`, COALESCE(SUM(t.total), 0) as total
+            FROM data_arsip t
+            LEFT JOIN unit_kerja u ON t.unit_kerja_id = u.id
+            WHERE ((t.tanggal >= '2026-01-01' AND t.tanggal <= '2026-12-31') OR (t.tanggal >= '2025-01-01' AND t.tanggal <= '2025-12-31') OR (t.tanggal >= '2024-01-01' AND t.tanggal <= '2024-12-31')) AND MONTH(t.tanggal) IN (1,2,3,4,5,6,7,8,9,10,11,12) AND u.instansi_id IN (1,6,7) AND t.unit_kerja_id IN (22,23,24,25,26,1,2,3,27,28,29,30,31,32,4,33,34,35,36,5,37,6,38,7,39,40,8,9,41,42,10,43,44,45,11,12,13,14,46,15,47,48,49,16,50,17,51,18,52,53,54,55,19,20,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,79,80,21)
+            GROUP BY MONTH(t.tanggal), MONTHNAME(t.tanggal)
+            ORDER BY bulan
+        
+DEBUG API: Params: {}
+DEBUG API: SQL Query: 
+            SELECT 
+                MONTH(t.tanggal) as bulan,
+                MONTHNAME(t.tanggal) as nama_bulan,
+                COALESCE(SUM(t.naskah_masuk), 0) as `naskah_masuk`, COALESCE(SUM(t.naskah_keluar), 0) as `naskah_keluar`, COALESCE(SUM(t.disposisi), 0) as `disposisi`, COALESCE(SUM(t.berkas), 0) as `berkas`, COALESCE(SUM(t.retensi_permanen), 0) as `retensi_permanen`, COALESCE(SUM(t.retensi_musnah), 0) as `retensi_musnah`, COALESCE(SUM(t.naskah_ditindaklanjuti), 0) as `naskah_ditindaklanjuti`, COALESCE(SUM(t.total), 0) as total
+            FROM data_arsip t
+            LEFT JOIN unit_kerja u ON t.unit_kerja_id = u.id
+            WHERE ((t.tanggal >= '2026-01-01' AND t.tanggal <= '2026-12-31') OR (t.tanggal >= '2025-01-01' AND t.tanggal <= '2025-12-31') OR (t.tanggal >= '2024-01-01' AND t.tanggal <= '2024-12-31')) AND MONTH(t.tanggal) IN (1,2,3,4,5,6,7,8,9,10,11,12) AND u.instansi_id IN (1,6,7) AND t.unit_kerja_id IN (22,23,24,25,26,1,2,3,27,28,29,30,31,32,4,33,34,35,36,5,37,6,38,7,39,40,8,9,41,42,10,43,44,45,11,12,13,14,46,15,47,48,49,16,50,17,51,18,52,53,54,55,19,20,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,79,80,21)
+            GROUP BY MONTH(t.tanggal), MONTHNAME(t.tanggal)
+            ORDER BY bulan
+        
+DEBUG API: Params: {}
+DEBUG API: SQL Query: 
+            SELECT 
+                MONTH(t.tanggal) as bulan,
+                MONTHNAME(t.tanggal) as nama_bulan,
+                COALESCE(SUM(t.naskah_masuk), 0) as `naskah_masuk`, COALESCE(SUM(t.naskah_keluar), 0) as `naskah_keluar`, COALESCE(SUM(t.disposisi), 0) as `disposisi`, COALESCE(SUM(t.berkas), 0) as `berkas`, COALESCE(SUM(t.retensi_permanen), 0) as `retensi_permanen`, COALESCE(SUM(t.retensi_musnah), 0) as `retensi_musnah`, COALESCE(SUM(t.naskah_ditindaklanjuti), 0) as `naskah_ditindaklanjuti`, COALESCE(SUM(t.total), 0) as total
+            FROM data_arsip t
+            LEFT JOIN unit_kerja u ON t.unit_kerja_id = u.id
+            WHERE ((t.tanggal >= '2026-01-01' AND t.tanggal <= '2026-12-31') OR (t.tanggal >= '2025-01-01' AND t.tanggal <= '2025-12-31') OR (t.tanggal >= '2024-01-01' AND t.tanggal <= '2024-12-31')) AND MONTH(t.tanggal) IN (1,2,3,4,5,6,7,8,9,10,11,12) AND u.instansi_id IN (1,6,7) AND t.unit_kerja_id IN (22,23,24,25,26,1,2,3,27,28,29,30,31,32,4,33,34,35,36,5,37,6,38,7,39,40,8,9,41,42,10,43,44,45,11,12,13,14,46,15,47,48,49,16,50,17,51,18,52,53,54,55,19,20,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,79,80,21)
+            GROUP BY MONTH(t.tanggal), MONTHNAME(t.tanggal)
+            ORDER BY bulan
+        
+DEBUG API: Params: {}
+DEBUG API: SQL Query: 
+            SELECT 
+                MONTH(t.tanggal) as bulan,
+                MONTHNAME(t.tanggal) as nama_bulan,
+                COALESCE(SUM(t.naskah_masuk), 0) as `naskah_masuk`, COALESCE(SUM(t.naskah_keluar), 0) as `naskah_keluar`, COALESCE(SUM(t.disposisi), 0) as `disposisi`, COALESCE(SUM(t.berkas), 0) as `berkas`, COALESCE(SUM(t.retensi_permanen), 0) as `retensi_permanen`, COALESCE(SUM(t.retensi_musnah), 0) as `retensi_musnah`, COALESCE(SUM(t.naskah_ditindaklanjuti), 0) as `naskah_ditindaklanjuti`, COALESCE(SUM(t.total), 0) as total
+            FROM data_arsip t
+            LEFT JOIN unit_kerja u ON t.unit_kerja_id = u.id
+            WHERE t.tanggal >= :start_date AND t.tanggal <= :end_date AND MONTH(t.tanggal) IN (1,2,3,4,5,6,7,8,9,10,11,12) AND u.instansi_id IN (1,6,7) AND t.unit_kerja_id IN (22,23,24,25,26,1,2,3,27,28,29,30,31,32,4,33,34,35,36,5,37,6,38,7,39,40,8,9,41,42,10,43,44,45,11,12,13,14,46,15,47,48,49,16,50,17,51,18,52,53,54,55,19,20,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,79,80,21)
+            GROUP BY MONTH(t.tanggal), MONTHNAME(t.tanggal)
+            ORDER BY bulan
+        
+DEBUG API: Params: {'start_date': '2025-01-01', 'end_date': '2025-12-31'}
+DEBUG API: SQL Query: 
+            SELECT 
+                MONTH(t.tanggal) as bulan,
+                MONTHNAME(t.tanggal) as nama_bulan,
+                COALESCE(SUM(t.naskah_masuk), 0) as `naskah_masuk`, COALESCE(SUM(t.naskah_keluar), 0) as `naskah_keluar`, COALESCE(SUM(t.disposisi), 0) as `disposisi`, COALESCE(SUM(t.berkas), 0) as `berkas`, COALESCE(SUM(t.retensi_permanen), 0) as `retensi_permanen`, COALESCE(SUM(t.retensi_musnah), 0) as `retensi_musnah`, COALESCE(SUM(t.naskah_ditindaklanjuti), 0) as `naskah_ditindaklanjuti`, COALESCE(SUM(t.total), 0) as total
+            FROM data_arsip t
+            LEFT JOIN unit_kerja u ON t.unit_kerja_id = u.id
+            WHERE t.tanggal >= :start_date AND t.tanggal <= :end_date AND MONTH(t.tanggal) IN (1,2,3,4,5,6,7,8,9,10,11,12) AND u.instansi_id IN (1,6,7) AND t.unit_kerja_id IN (22,23,24,25,26,1,2,3,27,28,29,30,31,32,4,33,34,35,36,5,37,6,38,7,39,40,8,9,41,42,10,43,44,45,11,12,13,14,46,15,47,48,49,16,50,17,51,18,52,53,54,55,19,20,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,79,80,21)
+            GROUP BY MONTH(t.tanggal), MONTHNAME(t.tanggal)
+            ORDER BY bulan
+        
+DEBUG API: Params: {'start_date': '2025-01-01', 'end_date': '2025-12-31'}
+DEBUG API: SQL Query: 
+            SELECT 
+                MONTH(t.tanggal) as bulan,
+                MONTHNAME(t.tanggal) as nama_bulan,
+                COALESCE(SUM(t.naskah_masuk), 0) as `naskah_masuk`, COALESCE(SUM(t.naskah_keluar), 0) as `naskah_keluar`, COALESCE(SUM(t.disposisi), 0) as `disposisi`, COALESCE(SUM(t.berkas), 0) as `berkas`, COALESCE(SUM(t.retensi_permanen), 0) as `retensi_permanen`, COALESCE(SUM(t.retensi_musnah), 0) as `retensi_musnah`, COALESCE(SUM(t.naskah_ditindaklanjuti), 0) as `naskah_ditindaklanjuti`, COALESCE(SUM(t.total), 0) as total
+            FROM data_arsip t
+            LEFT JOIN unit_kerja u ON t.unit_kerja_id = u.id
+            WHERE ((t.tanggal >= '2026-01-01' AND t.tanggal <= '2026-12-31') OR (t.tanggal >= '2025-01-01' AND t.tanggal <= '2025-12-31') OR (t.tanggal >= '2024-01-01' AND t.tanggal <= '2024-12-31')) AND MONTH(t.tanggal) IN (1,2,3,4,5,6,7,8,9,10,11,12) AND u.instansi_id IN (1,6,7) AND t.unit_kerja_id IN (22,23,24,25,26,1,2,3,27,28,29,30,31,32,4,33,34,35,36,5,37,6,38,7,39,40,8,9,41,42,10,43,44,45,11,12,13,14,46,15,47,48,49,16,50,17,51,18,52,53,54,55,19,20,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,79,80,21)
+            GROUP BY MONTH(t.tanggal), MONTHNAME(t.tanggal)
+            ORDER BY bulan
+        
+DEBUG API: Params: {}
+DEBUG API: SQL Query: 
+            SELECT 
+                MONTH(t.tanggal) as bulan,
+                MONTHNAME(t.tanggal) as nama_bulan,
+                COALESCE(SUM(t.naskah_masuk), 0) as `naskah_masuk`, COALESCE(SUM(t.naskah_keluar), 0) as `naskah_keluar`, COALESCE(SUM(t.disposisi), 0) as `disposisi`, COALESCE(SUM(t.berkas), 0) as `berkas`, COALESCE(SUM(t.retensi_permanen), 0) as `retensi_permanen`, COALESCE(SUM(t.retensi_musnah), 0) as `retensi_musnah`, COALESCE(SUM(t.naskah_ditindaklanjuti), 0) as `naskah_ditindaklanjuti`, COALESCE(SUM(t.total), 0) as total
+            FROM data_arsip t
+            LEFT JOIN unit_kerja u ON t.unit_kerja_id = u.id
+            WHERE ((t.tanggal >= '2026-01-01' AND t.tanggal <= '2026-12-31') OR (t.tanggal >= '2025-01-01' AND t.tanggal <= '2025-12-31') OR (t.tanggal >= '2024-01-01' AND t.tanggal <= '2024-12-31')) AND MONTH(t.tanggal) IN (1,2,3,4,5,6,7,8,9,10,11,12) AND u.instansi_id IN (1,6,7) AND t.unit_kerja_id IN (22,23,24,25,26,1,2,3,27,28,29,30,31,32,4,33,34,35,36,5,37,6,38,7,39,40,8,9,41,42,10,43,44,45,11,12,13,14,46,15,47,48,49,16,50,17,51,18,52,53,54,55,19,20,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,79,80,21)
+            GROUP BY MONTH(t.tanggal), MONTHNAME(t.tanggal)
+            ORDER BY bulan
+        
+DEBUG API: Params: {}
+DEBUG API: SQL Query: 
+            SELECT 
+                MONTH(t.tanggal) as bulan,
+                MONTHNAME(t.tanggal) as nama_bulan,
+                COALESCE(SUM(t.naskah_masuk), 0) as `naskah_masuk`, COALESCE(SUM(t.naskah_keluar), 0) as `naskah_keluar`, COALESCE(SUM(t.disposisi), 0) as `disposisi`, COALESCE(SUM(t.berkas), 0) as `berkas`, COALESCE(SUM(t.retensi_permanen), 0) as `retensi_permanen`, COALESCE(SUM(t.retensi_musnah), 0) as `retensi_musnah`, COALESCE(SUM(t.naskah_ditindaklanjuti), 0) as `naskah_ditindaklanjuti`, COALESCE(SUM(t.total), 0) as total
+            FROM data_arsip t
+            LEFT JOIN unit_kerja u ON t.unit_kerja_id = u.id
+            WHERE ((t.tanggal >= '2026-01-01' AND t.tanggal <= '2026-12-31') OR (t.tanggal >= '2025-01-01' AND t.tanggal <= '2025-12-31') OR (t.tanggal >= '2024-01-01' AND t.tanggal <= '2024-12-31')) AND MONTH(t.tanggal) IN (1,2,3,4,5,6,7,8,9,10,11,12) AND u.instansi_id IN (1,6,7) AND t.unit_kerja_id IN (22,23,24,25,26,1,2,3,27,28,29,30,31,32,4,33,34,35,36,5,37,6,38,7,39,40,8,9,41,42,10,43,44,45,11,12,13,14,46,15,47,48,49,16,50,17,51,18,52,53,54,55,19,20,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,79,80,21)
+            GROUP BY MONTH(t.tanggal), MONTHNAME(t.tanggal)
+            ORDER BY bulan
+        
+DEBUG API: Params: {}
+DEBUG API: SQL Query: 
+            SELECT 
+                MONTH(t.tanggal) as bulan,
+                MONTHNAME(t.tanggal) as nama_bulan,
+                COALESCE(SUM(t.naskah_masuk), 0) as `naskah_masuk`, COALESCE(SUM(t.naskah_keluar), 0) as `naskah_keluar`, COALESCE(SUM(t.disposisi), 0) as `disposisi`, COALESCE(SUM(t.berkas), 0) as `berkas`, COALESCE(SUM(t.retensi_permanen), 0) as `retensi_permanen`, COALESCE(SUM(t.retensi_musnah), 0) as `retensi_musnah`, COALESCE(SUM(t.naskah_ditindaklanjuti), 0) as `naskah_ditindaklanjuti`, COALESCE(SUM(t.total), 0) as total
+            FROM data_arsip t
+            LEFT JOIN unit_kerja u ON t.unit_kerja_id = u.id
+            WHERE ((t.tanggal >= '2026-01-01' AND t.tanggal <= '2026-12-31') OR (t.tanggal >= '2025-01-01' AND t.tanggal <= '2025-12-31') OR (t.tanggal >= '2024-01-01' AND t.tanggal <= '2024-12-31')) AND MONTH(t.tanggal) IN (1,2,3,4,5,6,7,8,9,10,11,12) AND u.instansi_id IN (1,6,7) AND t.unit_kerja_id IN (22,23,24,25,26,1,2,3,27,28,29,30,31,32,4,33,34,35,36,5,37,6,38,7,39,40,8,9,41,42,10,43,44,45,11,12,13,14,46,15,47,48,49,16,50,17,51,18,52,53,54,55,19,20,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,79,80,21)
+            GROUP BY MONTH(t.tanggal), MONTHNAME(t.tanggal)
+            ORDER BY bulan
+        
+DEBUG API: Params: {}
+DEBUG API: SQL Completed in 334.957448s. Rows: 12
+DEBUG API: SQL Completed in 334.943706s. Rows: 12
+DEBUG API: SQL Completed in 641.762712s. Rows: 12
+DEBUG API: SQL Completed in 640.508973s. Rows: 12
+DEBUG API: SQL Completed in 639.324669s. Rows: 12
+DEBUG API: SQL Completed in 631.99421s. Rows: 12
+DEBUG API: SQL Completed in 618.719503s. Rows: 12
+DEBUG API: SQL Completed in 618.546269s. Rows: 12
+DEBUG API: SQL Completed in 618.546228s. Rows: 12
+DEBUG API: SQL Completed in 644.580433s. Rows: 12
+DEBUG API: SQL Query: 
+            SELECT 
+                MONTH(t.tanggal) as bulan,
+                MONTHNAME(t.tanggal) as nama_bulan,
+                COALESCE(SUM(t.naskah_masuk), 0) as `naskah_masuk`, COALESCE(SUM(t.naskah_keluar), 0) as `naskah_keluar`, COALESCE(SUM(t.disposisi), 0) as `disposisi`, COALESCE(SUM(t.berkas), 0) as `berkas`, COALESCE(SUM(t.retensi_permanen), 0) as `retensi_permanen`, COALESCE(SUM(t.retensi_musnah), 0) as `retensi_musnah`, COALESCE(SUM(t.naskah_ditindaklanjuti), 0) as `naskah_ditindaklanjuti`, COALESCE(SUM(t.total), 0) as total
+            FROM data_arsip t
+            LEFT JOIN unit_kerja u ON t.unit_kerja_id = u.id
+            WHERE ((t.tanggal >= '2026-01-01' AND t.tanggal <= '2026-12-31') OR (t.tanggal >= '2025-01-01' AND t.tanggal <= '2025-12-31') OR (t.tanggal >= '2024-01-01' AND t.tanggal <= '2024-12-31')) AND MONTH(t.tanggal) IN (1,2,3,4,5,6,7,8,9,10,11,12) AND u.instansi_id IN (1,6,7)
+            GROUP BY MONTH(t.tanggal), MONTHNAME(t.tanggal)
+            ORDER BY bulan
+        
+DEBUG API: Params: {}
+DEBUG API: SQL Query: 
+            SELECT 
+                MONTH(t.tanggal) as bulan,
+                MONTHNAME(t.tanggal) as nama_bulan,
+                COALESCE(SUM(t.naskah_masuk), 0) as `naskah_masuk`, COALESCE(SUM(t.naskah_keluar), 0) as `naskah_keluar`, COALESCE(SUM(t.disposisi), 0) as `disposisi`, COALESCE(SUM(t.berkas), 0) as `berkas`, COALESCE(SUM(t.retensi_permanen), 0) as `retensi_permanen`, COALESCE(SUM(t.retensi_musnah), 0) as `retensi_musnah`, COALESCE(SUM(t.naskah_ditindaklanjuti), 0) as `naskah_ditindaklanjuti`, COALESCE(SUM(t.total), 0) as total
+            FROM data_arsip t
+            LEFT JOIN unit_kerja u ON t.unit_kerja_id = u.id
+            WHERE ((t.tanggal >= '2026-01-01' AND t.tanggal <= '2026-12-31') OR (t.tanggal >= '2025-01-01' AND t.tanggal <= '2025-12-31') OR (t.tanggal >= '2024-01-01' AND t.tanggal <= '2024-12-31')) AND MONTH(t.tanggal) IN (1,2,3,4,5,6,7,8,9,10,11,12) AND u.instansi_id IN (1,6,7)
+            GROUP BY MONTH(t.tanggal), MONTHNAME(t.tanggal)
+            ORDER BY bulan
+        
+DEBUG API: Params: {}
+DEBUG API: SQL Query: 
+            SELECT 
+                MONTH(t.tanggal) as bulan,
+                MONTHNAME(t.tanggal) as nama_bulan,
+                COALESCE(SUM(t.naskah_masuk), 0) as `naskah_masuk`, COALESCE(SUM(t.naskah_keluar), 0) as `naskah_keluar`, COALESCE(SUM(t.disposisi), 0) as `disposisi`, COALESCE(SUM(t.berkas), 0) as `berkas`, COALESCE(SUM(t.retensi_permanen), 0) as `retensi_permanen`, COALESCE(SUM(t.retensi_musnah), 0) as `retensi_musnah`, COALESCE(SUM(t.naskah_ditindaklanjuti), 0) as `naskah_ditindaklanjuti`, COALESCE(SUM(t.total), 0) as total
+            FROM data_arsip t
+            LEFT JOIN unit_kerja u ON t.unit_kerja_id = u.id
+            WHERE ((t.tanggal >= '2026-01-01' AND t.tanggal <= '2026-12-31') OR (t.tanggal >= '2025-01-01' AND t.tanggal <= '2025-12-31') OR (t.tanggal >= '2024-01-01' AND t.tanggal <= '2024-12-31')) AND MONTH(t.tanggal) IN (1,2,3,4,5,6,7,8,9,10,11,12) AND u.instansi_id IN (1,6,7)
+            GROUP BY MONTH(t.tanggal), MONTHNAME(t.tanggal)
+            ORDER BY bulan
+        
+DEBUG API: Params: {}
+DEBUG API: SQL Completed in 505.044401s. Rows: 12
+DEBUG API: SQL Completed in 493.255001s. Rows: 12
+DEBUG API: SQL Completed in 501.879708s. Rows: 12

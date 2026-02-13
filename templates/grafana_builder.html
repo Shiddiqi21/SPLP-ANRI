@@ -479,6 +479,16 @@
                             <!-- Moved to top -->
                         </div>
                         <div class="form-check" style="margin-top: 8px;">
+                            <input class="form-check-input" type="checkbox" id="includeTotal" checked
+                                style="accent-color: #4CAF50;">
+                            <label class="form-check-label" for="includeTotal"
+                                style="font-weight: 600; color: #4CAF50;">
+                                ➕ Sertakan Kolom Total <span class="small-text"
+                                    style="font-weight: normal; color: #666;">(uncheck jika ingin menyembunyikan
+                                    Total)</span>
+                            </label>
+                        </div>
+                        <div class="form-check" style="margin-top: 8px;">
                             <input class="form-check-input" type="checkbox" id="excludeMeta"
                                 style="accent-color: #E91E63;">
                             <label class="form-check-label" for="excludeMeta" style="font-weight: 600; color: #E91E63;">
@@ -769,6 +779,12 @@
                 url += '&months=${bulan}';
             } else if (months.length > 0) {
                 url += `&months=${months.join(',')}`;
+            }
+
+            // Add include_total_col param
+            const includeTotal = document.getElementById('includeTotal').checked;
+            if (!includeTotal) {
+                url += '&include_total_col=false';
             }
 
             // Add exclude_meta if checked (for pie chart)

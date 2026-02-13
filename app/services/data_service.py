@@ -318,6 +318,13 @@ class DataService:
                 cache.invalidate_prefix("stats_table")
                 cache.delete("dashboard_stats")
                 
+                # AUTO-SYNC SUMMARY
+                try:
+                    from app.services.summary_service import summary_service
+                    summary_service.update_summary(unit_kerja_id, tanggal.year, tanggal.month)
+                except Exception as e:
+                    print(f"[DataService] Warning: Failed to sync summary: {e}")
+                
                 return {"status": "success", "data": data.to_dict()}
             except Exception as e:
                 db.rollback()
@@ -331,12 +338,24 @@ class DataService:
                 if not data:
                     return {"status": "error", "message": "Data tidak ditemukan"}
                 
+                # Capture info for summary update BEFORE delete
+                unit_id = data.unit_kerja_id
+                d_year = data.tanggal.year
+                d_month = data.tanggal.month
+                
                 db.delete(data)
                 db.commit()
                 
                 # Invalidate
                 cache.invalidate_prefix("stats_table")
                 cache.delete("dashboard_stats")
+                
+                # AUTO-SYNC SUMMARY
+                try:
+                    from app.services.summary_service import summary_service
+                    summary_service.update_summary(unit_id, d_year, d_month)
+                except Exception as e:
+                    print(f"[DataService] Warning: Failed to sync summary: {e}")
                 
                 return {"status": "success", "message": "Data berhasil dihapus"}
             except Exception as e:

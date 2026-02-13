@@ -16,6 +16,15 @@ cp .env.example .env
 ```
 
 ### 3. Run Server
+Cara Termudah (Windows):
+Double click file `run.bat`
+
+Atau via Terminal:
+```bash
+python run.py
+```
+
+Cara Manual (Debug):
 ```bash
 python -m uvicorn app.main:app --reload --port 8000
 ```

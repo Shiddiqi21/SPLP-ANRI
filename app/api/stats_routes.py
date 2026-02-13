@@ -29,7 +29,8 @@ def get_grafana_monthly(
     instansi_id: Optional[str] = Query(None, description="Filter berdasarkan instansi ID"),
     unit_kerja_id: Optional[str] = Query(None, description="Filter berdasarkan unit kerja ID"),
     use_display_name: bool = Query(True, description="Gunakan nama tampilan (display name) dari sistem"),
-    exclude_meta: bool = Query(False, description="Exclude Bulan/Nama Bulan dari response (untuk pie chart)")
+    exclude_meta: bool = Query(False, description="Exclude Bulan/Nama Bulan dari response (untuk pie chart)"),
+    include_total_col: bool = Query(True, description="Sertakan kolom Total dalam response")
 ):
     """
     [GRAFANA OPTIMIZED] Statistik bulanan - Response langsung array tanpa wrapper.
@@ -52,7 +53,8 @@ def get_grafana_monthly(
     year_list = []
     if year:
         clean_years = str(year).replace('{', '').replace('}', '')
-        year_list = [int(y.strip()) for y in clean_years.split(',') if y.strip().isdigit()]
+        raw_years = [int(y.strip()) for y in clean_years.split(',') if y.strip().isdigit()]
+        year_list = sorted(list(set(raw_years)), reverse=True)
     
     if not year_list:
         year_list = [datetime.now().year]
@@ -86,66 +88,120 @@ def get_grafana_monthly(
         
         safe_table_name = table.name.replace('-', '_').replace(' ', '_')
         
+        
         # Build column mapping: name -> display_name
         col_mapping = {c.name: c.display_name for c in table.columns}
+        # Add 'total' to mapping manually so it displays nicely
+        col_mapping["total"] = "Total"
+        
         available_cols = [c.name for c in table.columns if c.is_summable]
+        
+        # FIX: Ensure 'total' is available for selection
+        if "total" not in available_cols:
+             available_cols.append("total")
         
         if columns:
             selected_cols = [c.strip() for c in columns.split(',') if c.strip() in available_cols]
         else:
-            selected_cols = available_cols
-        
+             selected_cols = available_cols[:]
+
         if not selected_cols:
-            selected_cols = available_cols
+             selected_cols = available_cols[:]
         
+        # APPLY USER OPTION: include_total_col
+        if include_total_col:
+            if "total" not in selected_cols and "total" in available_cols:
+                selected_cols.append("total")
+        else:
+            if "total" in selected_cols:
+                selected_cols.remove("total")
+        
+        # Define sum expressions
         sum_expressions = [f"COALESCE(SUM(t.{col}), 0) as `{col}`" for col in selected_cols]
-        # Only add total if no specific columns selected (all columns mode)
-        include_total = not columns  # columns is None means all columns
-        if include_total:
-            sum_expressions.append("COALESCE(SUM(t.total), 0) as total")
+        
+        # FIX: Define include_total for downstream logic (Deprecated but kept for safety if needed)
+        # But we remove manual usage downstream!
+        include_total = False 
         
         # Build WHERE conditions
         where_conditions = []
         params = {}
         
-        # Year condition
-        if len(year_list) == 1:
-            where_conditions.append("YEAR(t.tanggal) = :year")
-            params["year"] = year_list[0]
-        else:
-            where_conditions.append(f"YEAR(t.tanggal) IN ({','.join(str(y) for y in year_list)})")
+        # SUPER OPTIMIZATION: Use Summary Table (Materialized View)
+        # 2M Rows -> ~2000 Rows.
         
+        # Determine if we can use summary table
+        # We can use it if we are asking for standard monthly stats (which this endpoint is).
+        # And we don't have complex filters that are not in summary (e.g. daily, or specific raw columns not in summary).
+        # Summary table has: year, month, unit_kerja_id, and all metric sums.
+        
+        # FIX: Only use summary for 'data_arsip' table!
+        use_summary = (table.name == "data_arsip")
+        safe_table_name = "data_arsip_monthly_summary" if use_summary else "data_arsip"
+        
+        # Adjust where conditions for Summary Table
+        # Summary has 'year' and 'month' columns directly.
+        # Raw table has 'tanggal'.
+        
+        where_conditions = []
+        params = {}
+        
+        # 1. Year Filter
+        if year_list:
+            if len(year_list) == 1:
+                where_conditions.append("t.year = :year")
+                params["year"] = year_list[0]
+            else:
+                where_conditions.append(f"t.year IN ({','.join(str(y) for y in year_list)})")
+        
+        # 2. Month Filter
         if month_filter:
-            where_conditions.append(f"MONTH(t.tanggal) IN ({','.join(str(m) for m in month_filter)})")
+             where_conditions.append(f"t.month IN ({','.join(str(m) for m in month_filter)})")
         
-        if instansi_ids:
-            if len(instansi_ids) == 1:
-                where_conditions.append("u.instansi_id = :instansi_id")
-                params["instansi_id"] = instansi_ids[0]
-            else:
-                where_conditions.append(f"u.instansi_id IN ({','.join(str(i) for i in instansi_ids)})")
-                
+        # 3. Unit/Instansi Filter (Same logic as before, but safer)
+        need_join = True
         if unit_kerja_ids:
-            if len(unit_kerja_ids) == 1:
-                where_conditions.append("t.unit_kerja_id = :unit_kerja_id")
-                params["unit_kerja_id"] = unit_kerja_ids[0]
-            else:
-                where_conditions.append(f"t.unit_kerja_id IN ({','.join(str(u) for u in unit_kerja_ids)})")
+             need_join = False
+             if len(unit_kerja_ids) == 1:
+                 where_conditions.append("t.unit_kerja_id = :unit_kerja_id")
+                 params["unit_kerja_id"] = unit_kerja_ids[0]
+             else:
+                 where_conditions.append(f"t.unit_kerja_id IN ({','.join(str(u) for u in unit_kerja_ids)})")
+        elif instansi_ids:
+             need_join = True
+             if len(instansi_ids) == 1:
+                 where_conditions.append("u.instansi_id = :instansi_id")
+                 params["instansi_id"] = instansi_ids[0]
+             else:
+                 where_conditions.append(f"u.instansi_id IN ({','.join(str(i) for i in instansi_ids)})")
+        
+        join_clause = "LEFT JOIN unit_kerja u ON t.unit_kerja_id = u.id" if need_join else ""
+        
+        # 4. Grouping (Already grouped in summary, but we group again to aggregate across units if needed)
+        # If we select "All Units", we get 2000 rows (1 row per unit per month).
+        # We want 12 rows (1 per month) IF we are aggregating totals.
+        
+        # Wait, the endpoint returns "monthly_data".
+        # It usually groups by MONTH only?
+        # Let's check the original GROUP BY: "GROUP BY MONTH(t.tanggal)".
+        # Yes, it aggregates all units into one row per month.
         
         sql = f"""
             SELECT 
-                MONTH(t.tanggal) as bulan,
-                MONTHNAME(t.tanggal) as nama_bulan,
-                {', '.join(sum_expressions)}
+                t.month as bulan,
+                MONTHNAME(STR_TO_DATE(CONCAT('2024-',t.month,'-01'), '%Y-%m-%d')) as nama_bulan,
+                {', '.join(sum_expressions).replace('MONTH(t.tanggal)', 't.month')}
             FROM {safe_table_name} t
-            LEFT JOIN unit_kerja u ON t.unit_kerja_id = u.id
+            {join_clause}
             WHERE {' AND '.join(where_conditions)}
-            GROUP BY MONTH(t.tanggal), MONTHNAME(t.tanggal)
-            ORDER BY bulan
+            GROUP BY t.month
+            ORDER BY t.month
         """
         
         try:
             result = db.execute(text(sql), params).mappings().all()
+        except Exception as e:
+            return []
         except Exception as e:
             return []
         
@@ -179,6 +235,8 @@ def get_grafana_monthly(
             # Determine which months to fill (filtered or all)
             months_to_fill = month_filter if month_filter else list(range(1, 13))
             
+            
+            print(f"DEBUG: Filling months for {months_to_fill}")
             for m in months_to_fill:
                 if m not in existing_months:
                     if use_display_name:
@@ -196,10 +254,18 @@ def get_grafana_monthly(
                             zero_row[col] = 0
                     monthly_data.append(zero_row)
             
-            monthly_data.sort(key=lambda x: x.get('Bulan') or x.get('bulan'))
+            print("DEBUG: Sorting data...")
+            try:
+                monthly_data.sort(key=lambda x: x.get('Bulan') or x.get('bulan') or 0)
+                print("DEBUG: Sort Success!")
+            except Exception as e:
+                print(f"DEBUG: Sort Failed! {e}")
+                import traceback
+                traceback.print_exc()
         
         # Return FLAT ARRAY directly (no wrapper!)
         # Cache Result (5 minutes)
+        print("DEBUG: Returning Data")
         cache.set(cache_key, monthly_data, ttl=300)
         return monthly_data
 
