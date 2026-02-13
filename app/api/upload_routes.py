@@ -47,6 +47,23 @@ async def upload_file(
     if not result["success"] and result["stats"]["inserted"] == 0 and result["stats"]["updated"] == 0:
         raise HTTPException(status_code=400, detail=result)
     
+    # [AUTO-UPDATE SUMMARY]
+    # Check if this table has an optimized summary. If yes, refresh it.
+    if result["success"] and table_id:
+        try:
+            from app.services.generic_summary_service import GenericSummaryService
+            summary_service = GenericSummaryService(db)
+            if summary_service.check_summary_exists(table_id):
+                 # Auto-refresh
+                 summary_result = summary_service.create_summary_table(table_id)
+                 if summary_result["success"]:
+                     result["message"] += f" (Summary Table Automatically Updated: {summary_result['rows']} rows)"
+                 else:
+                     result["message"] += f" (Warning: Failed to update summary table: {summary_result['message']})"
+        except Exception as e:
+            # Don't fail the upload if summary update fails, just log it
+            print(f"Error auto-updating summary: {e}")
+
     return result
 
 

@@ -239,6 +239,23 @@ class TableService:
                 safe_name = self._sanitize_name(table.name)
                 db.execute(text(f"DROP TABLE IF EXISTS {safe_name}"))
                 
+                # Drop Summary Table (if exists)
+                # We need to know the summary table name.
+                # Since we don't have GenericSummaryService here, we can replicate logic or import it.
+                # Importing might cause circular dependency if generic_summary_service imports table_models.
+                # Let's check imports. generic_summary_service imports TableDefinition.
+                # table_service imports TableDefinition.
+                # Safe to import GenericSummaryService inside the method to avoid top-level circle.
+                try:
+                    from app.services.generic_summary_service import GenericSummaryService
+                    # We need a session for GenericSummaryService, but it takes db session.
+                    # We can use the current 'db' session.
+                    gen_service = GenericSummaryService(db)
+                    summary_table = gen_service.get_summary_table_name(table.id)
+                    db.execute(text(f"DROP TABLE IF EXISTS {summary_table}"))
+                except Exception as ex:
+                    print(f"Warning: Failed to drop summary table: {ex}")
+                
                 # Delete Metadata
                 db.delete(table)
                 db.commit()

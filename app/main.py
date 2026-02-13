@@ -17,6 +17,7 @@ from app.api.arsip_routes import router as arsip_router
 from app.api.summary_routes import router as summary_router
 from app.api.auth_routes import router as auth_router
 from app.api.data_routes import router as data_router
+from app.api.summary_routes import router as summary_router
 from app.api.upload_routes import router as upload_router
 from app.api.table_routes import router as table_router
 from app.api.stats_routes import router as stats_router

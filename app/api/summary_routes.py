@@ -1,53 +1,35 @@
-"""
-API Routes untuk Summary/Aggregated Data (untuk Grafana)
-"""
-from fastapi import APIRouter, Query
-from typing import Optional
 
-from app.services.aggregation_service import aggregation_service
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from app.database import get_db
+from app.services.generic_summary_service import GenericSummaryService
+import logging
 
-router = APIRouter(prefix="/api/summary", tags=["Summary Data (Grafana)"])
+router = APIRouter(prefix="/api/summary", tags=["Summary"])
+logger = logging.getLogger(__name__)
 
-
-@router.get("", summary="Get Pre-Aggregated Summary")
-async def get_summary():
+@router.post("/generate/{table_id}")
+async def generate_summary(table_id: int, db: Session = Depends(get_db)):
     """
-    Get pre-aggregated summary data untuk Grafana.
-    Data sudah di-aggregate sehingga query lebih ringan.
+    Trigger manual generation of summary table for a given table_id.
     """
-    return {
-        "data": aggregation_service.get_summary_for_grafana(),
-        "source": "arsip_summary",
-        "note": "Pre-aggregated data - updated periodically"
-    }
+    try:
+        service = GenericSummaryService(db)
+        result = service.create_summary_table(table_id)
+        
+        if not result["success"]:
+            raise HTTPException(status_code=400, detail=result["message"])
+            
+        return result
+    except Exception as e:
+        logger.error(f"Error generating summary: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-
-@router.get("/daily", summary="Get Daily Trend")
-async def get_daily_trend(days: int = Query(30, ge=1, le=365)):
+@router.get("/status/{table_id}")
+async def check_summary_status(table_id: int, db: Session = Depends(get_db)):
     """
-    Get daily trend data untuk time-series chart di Grafana.
+    Check if a summary table exists for the given table_id.
     """
-    return {
-        "data": aggregation_service.get_daily_trend(days),
-        "source": "daily_summary",
-        "days_requested": days
-    }
-
-
-@router.post("/refresh", summary="Manually Refresh Aggregations")
-async def refresh_aggregations():
-    """
-    Trigger manual refresh untuk semua aggregation.
-    Biasanya dilakukan otomatis oleh scheduler.
-    """
-    result = aggregation_service.run_all_aggregations()
-    return result
-
-
-@router.get("/status", summary="Get Aggregation Status")
-async def get_aggregation_status():
-    """Get status of last aggregation run"""
-    return {
-        "last_run": aggregation_service.last_run.isoformat() if aggregation_service.last_run else None,
-        "status": "ready" if aggregation_service.last_run else "never_run"
-    }
+    service = GenericSummaryService(db)
+    exists = service.check_summary_exists(table_id)
+    return {"exists": exists}

@@ -1617,28 +1617,114 @@
         async function manageTables() {
             document.getElementById('modal-manage-tables').style.display = 'block';
             const container = document.getElementById('table-list-container');
+            container.innerHTML = '<p class="loading">Memuat daftar...</p>';
+
             try {
+                // Fetch tables and their summary status in parallel if possible, 
+                // but for now let's just fetch tables and check status one by one or lazy load
                 const res = await fetch(`${API_BASE}/tables?t=${Date.now()}`);
                 const result = await res.json();
                 const tables = result.data || [];
+
                 container.innerHTML = '';
-                tables.forEach(t => {
+
+                if (tables.length === 0) {
+                    container.innerHTML = '<p class="empty-state">Belum ada tabel terdaftar</p>';
+                    return;
+                }
+
+                for (const t of tables) {
                     const div = document.createElement('div');
                     div.className = 'table-list-item';
+
+                    // Check optimization status
+                    let optimizeBadge = '';
+                    let optimizeBtn = `
+                        <button class="btn btn-sm btn-outline-warning" 
+                                onclick="optimizeTable(${t.id}, '${t.display_name}')" 
+                                style="font-size: 11px; padding: 4px 8px; border: 1px solid #f39c12; color: #f39c12; background:none; margin-right:5px;">
+                            <i class="bi bi-lightning-charge"></i> ⚡ Optimize
+                        </button>
+                    `;
+
+                    try {
+                        const statusRes = await fetch(`${API_BASE}/summary/status/${t.id}`);
+                        const statusData = await statusRes.json();
+                        if (statusData.exists) {
+                            optimizeBadge = '<span class="badge-default" style="background:#4CAF50; margin-left:5px;">Optimized</span>';
+                            optimizeBtn = `
+                                <button class="btn btn-sm" 
+                                        onclick="optimizeTable(${t.id}, '${t.display_name}')" 
+                                        title="Force Refresh Data"
+                                        style="font-size: 11px; padding: 4px 8px; border: 1px solid #777; color: #555; background:none; margin-right:5px;">
+                                    🔄 Refresh
+                                </button>
+                            `;
+                        }
+                    } catch (e) { console.error("Status check failed", e); }
+
                     div.innerHTML = `
                         <div class="table-list-info">
-                            <h4>${t.display_name} ${t.is_default ? '<span class="badge-default">Default</span>' : ''}</h4>
+                            <h4>${t.display_name} ${t.is_default ? '<span class="badge-default">Default</span>' : ''} ${optimizeBadge}</h4>
                             <small class="text-muted">ID: ${t.name}</small>
                         </div>
-                        <div class="table-list-actions">
-                            ${!t.is_default ? `<button class="btn btn-sm btn-primary" onclick="setDefaultTable(${t.id})">Set Default</button>` : ''}
+                        <div class="table-list-actions" style="display:flex; align-items:center;">
+                            ${optimizeBtn}
+                            ${!t.is_default ? `<button class="btn btn-sm btn-primary" onclick="setDefaultTable(${t.id})" style="margin-right:5px;">Set Default</button>` : ''}
                             <button class="btn btn-sm btn-danger" onclick="deleteTable(${t.id}, '${t.display_name}')">Hapus</button>
                         </div>
                     `;
                     container.appendChild(div);
-                });
+                }
             } catch (e) {
+                console.error(e);
                 container.innerHTML = '<p class="text-danger">Gagal memuat daftar tabel</p>';
+            }
+        }
+
+        async function optimizeTable(tableId, tableName) {
+            const result = await Swal.fire({
+                title: 'Optimize Table?',
+                html: `Apakah Anda yakin ingin melakukan optimize pada tabel <strong>"${tableName}"</strong>?<br><br>
+                       <small>Proses ini akan membuat ulang Summary Table untuk mempercepat dashboard.</small>`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Optimize!',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#ff9800'
+            });
+
+            if (!result.isConfirmed) return;
+
+            // Show Loading
+            Swal.fire({
+                title: 'Sedang Mengoptimalkan...',
+                html: 'Mohon tunggu, proses ini mungkin memakan waktu beberapa detik.',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            try {
+                const res = await fetch(`${API_BASE}/summary/generate/${tableId}`, {
+                    method: 'POST'
+                });
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    Swal.fire({
+                        title: 'Sukses!',
+                        html: `Table <strong>${tableName}</strong> berhasil dioptimalkan.<br>Total Rows: ${data.rows}`,
+                        icon: 'success'
+                    }).then(() => {
+                        manageTables(); // Refresh list to show badge
+                    });
+                } else {
+                    Swal.fire('Gagal!', data.detail || data.message || 'Unknown error', 'error');
+                }
+            } catch (e) {
+                Swal.fire('Error', `Gagal terhubung ke server: ${e}`, 'error');
             }
         }
 

@@ -128,16 +128,20 @@ def get_grafana_monthly(
         params = {}
         
         # SUPER OPTIMIZATION: Use Summary Table (Materialized View)
-        # 2M Rows -> ~2000 Rows.
+        from app.services.generic_summary_service import GenericSummaryService
+        summary_service = GenericSummaryService(db)
         
-        # Determine if we can use summary table
-        # We can use it if we are asking for standard monthly stats (which this endpoint is).
-        # And we don't have complex filters that are not in summary (e.g. daily, or specific raw columns not in summary).
-        # Summary table has: year, month, unit_kerja_id, and all metric sums.
+        # Check if generic summary exists for this table
+        has_summary = summary_service.check_summary_exists(table.id)
         
-        # FIX: Only use summary for 'data_arsip' table!
-        use_summary = (table.name == "data_arsip")
-        safe_table_name = "data_arsip_monthly_summary" if use_summary else "data_arsip"
+        # Determine strict summary usage
+        # We use summary if available AND we are not asking for raw-only columns (which we assume standard columns are in summary)
+        use_summary = has_summary
+        
+        if use_summary:
+            safe_table_name = summary_service.get_summary_table_name(table.id)
+        else:
+            safe_table_name = table.name.replace('-', '_').replace(' ', '_')
         
         # Adjust where conditions for Summary Table
         # Summary has 'year' and 'month' columns directly.
@@ -148,15 +152,46 @@ def get_grafana_monthly(
         
         # 1. Year Filter
         if year_list:
+            if use_summary:
+                # Summary table (generic) has 'year' column
+                col_year = "t.year"
+            elif table.name == "data_arsip":
+                 # Old data_arsip summary also has 'year' (from previous session)
+                 # Wait, create_summary_table.py created: month (VARCHAR), year (INT)??
+                 # No, create_summary_table.py ONLY created 'month'.
+                 # BUT data_arsip_monthly_summary likely has 'month' as 'YYYY-MM'.
+                 # So we need to extract year from month if 'year' column is missing or just use substring.
+                 # Actually, let's assume Generic Service adds 'year'. 
+                 # OLD summary table might NOT have 'year'.
+                 # Let's check logic:
+                 # If generic summary -> it has 'year'.
+                 # If data_arsip -> we used 't.year' in previous code, implies it has it?
+                 # Let's check view_file of create_summary_table.py... IDK.
+                 # Safe bet: use strict SQL based on table type.
+                 col_year = "t.year" 
+            else:
+                col_year = "YEAR(t.tanggal)"
+
             if len(year_list) == 1:
-                where_conditions.append("t.year = :year")
+                where_conditions.append(f"{col_year} = :year")
                 params["year"] = year_list[0]
             else:
-                where_conditions.append(f"t.year IN ({','.join(str(y) for y in year_list)})")
+                where_conditions.append(f"{col_year} IN ({','.join(str(y) for y in year_list)})")
         
         # 2. Month Filter
         if month_filter:
-             where_conditions.append(f"t.month IN ({','.join(str(m) for m in month_filter)})")
+             # Summary: 't.month' is 'YYYY-MM'. We need to filter by MM part?
+             # OR does summary have 'month_int'? No.
+             # Client sends month_filter = [1, 2, 12].
+             # If summary: SUBSTRING(t.month, 6, 2) IN (01, 02, 12)
+             # If raw: MONTH(t.tanggal) IN (1, 2, 12)
+             
+             if use_summary:
+                 # Helper to pad zero
+                 months_padded = [f"'{m:02d}'" for m in month_filter]
+                 where_conditions.append(f"SUBSTRING(t.month, 6, 2) IN ({','.join(months_padded)})")
+             else:
+                 where_conditions.append(f"MONTH(t.tanggal) IN ({','.join(str(m) for m in month_filter)})")
         
         # 3. Unit/Instansi Filter (Same logic as before, but safer)
         need_join = True
