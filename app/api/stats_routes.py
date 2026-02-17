@@ -51,12 +51,18 @@ def get_grafana_monthly(
 
     # Parse year (handle $__all and multi-value)
     year_list = []
+    is_all_years = False
     if year:
-        clean_years = str(year).replace('{', '').replace('}', '')
-        raw_years = [int(y.strip()) for y in clean_years.split(',') if y.strip().isdigit()]
-        year_list = sorted(list(set(raw_years)), reverse=True)
+        # Detect Grafana $__all or "All" — skip year filter entirely
+        clean_year_str = str(year).replace('{', '').replace('}', '').strip()
+        if clean_year_str.lower() in ('all', '$__all', ''):
+            is_all_years = True
+        else:
+            raw_years = [int(y.strip()) for y in clean_year_str.split(',') if y.strip().isdigit()]
+            year_list = sorted(list(set(raw_years)), reverse=True)
     
-    if not year_list:
+    # If no valid year parsed AND not explicitly "All", default to current year
+    if not year_list and not is_all_years:
         year_list = [datetime.now().year]
     
     # Parse instansi_id (handle $__all and multi-value with Grafana glob {1,2})
@@ -231,6 +237,8 @@ def get_grafana_monthly(
             select_month_name = "MONTHNAME(t.tanggal)"
             group_by = "DATE_FORMAT(t.tanggal, '%Y-%m')"
 
+        where_clause = f"WHERE {' AND '.join(where_conditions)}" if where_conditions else ""
+
         sql = f"""
             SELECT 
                 {select_month} as bulan,
@@ -238,15 +246,13 @@ def get_grafana_monthly(
                 {', '.join(sum_expressions)}
             FROM {safe_table_name} t
             {join_clause}
-            WHERE {' AND '.join(where_conditions)}
+            {where_clause}
             GROUP BY {group_by}
             ORDER BY {group_by}
         """
         
         try:
             result = db.execute(text(sql), params).mappings().all()
-        except Exception as e:
-            return []
         except Exception as e:
             return []
         
@@ -340,11 +346,15 @@ def get_grafana_combined(
 
     # Parse year (handle $__all and multi-value)
     year_list = []
+    is_all_years = False
     if year:
-        clean_years = str(year).replace('{', '').replace('}', '')
-        year_list = [int(y.strip()) for y in clean_years.split(',') if y.strip().isdigit()]
+        clean_year_str = str(year).replace('{', '').replace('}', '').strip()
+        if clean_year_str.lower() in ('all', '$__all', ''):
+            is_all_years = True
+        else:
+            year_list = [int(y.strip()) for y in clean_year_str.split(',') if y.strip().isdigit()]
     
-    if not year_list:
+    if not year_list and not is_all_years:
         year_list = [datetime.now().year]
     
     # Parse instansi_id (handle $__all and multi-value with Grafana glob {1,2})
@@ -392,12 +402,13 @@ def get_grafana_combined(
             where_conditions = []
             params = {}
             
-            # Year condition
-            if len(year_list) == 1:
-                where_conditions.append("YEAR(t.tanggal) = :year")
-                params["year"] = year_list[0]
-            else:
-                where_conditions.append(f"YEAR(t.tanggal) IN ({','.join(str(y) for y in year_list)})")
+            # Year condition (skip if All years)
+            if year_list:
+                if len(year_list) == 1:
+                    where_conditions.append("YEAR(t.tanggal) = :year")
+                    params["year"] = year_list[0]
+                else:
+                    where_conditions.append(f"YEAR(t.tanggal) IN ({','.join(str(y) for y in year_list)})")
             
             if month_filter:
                 where_conditions.append(f"MONTH(t.tanggal) IN ({','.join(str(m) for m in month_filter)})")
@@ -416,6 +427,8 @@ def get_grafana_combined(
                 else:
                     where_conditions.append(f"t.unit_kerja_id IN ({','.join(str(u) for u in unit_kerja_ids)})")
             
+            where_clause = f"WHERE {' AND '.join(where_conditions)}" if where_conditions else ""
+
             sql = f"""
                 SELECT 
                     MONTH(t.tanggal) as bulan,
@@ -423,7 +436,7 @@ def get_grafana_combined(
                     {', '.join(sum_expressions)}
                 FROM {safe_table_name} t
                 LEFT JOIN unit_kerja u ON t.unit_kerja_id = u.id
-                WHERE {' AND '.join(where_conditions)}
+                {where_clause}
                 GROUP BY MONTH(t.tanggal), MONTHNAME(t.tanggal)
             """
             
