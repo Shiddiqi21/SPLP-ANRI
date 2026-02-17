@@ -305,18 +305,26 @@ def get_grafana_monthly(
                             zero_row[col] = 0
                     monthly_data.append(zero_row)
             
-            print("DEBUG: Sorting data...")
             try:
                 monthly_data.sort(key=lambda x: x.get('Bulan') or x.get('bulan') or 0)
-                print("DEBUG: Sort Success!")
             except Exception as e:
-                print(f"DEBUG: Sort Failed! {e}")
-                import traceback
-                traceback.print_exc()
+                pass
         
+        # PIE CHART AGGREGATION: When exclude_meta=true (pie chart mode),
+        # aggregate all rows into a single sum row so the pie chart shows correct totals
+        if exclude_meta and len(monthly_data) > 1:
+            aggregated = {}
+            for row in monthly_data:
+                for key, value in row.items():
+                    try:
+                        numeric_val = int(value) if isinstance(value, int) else float(value)
+                        aggregated[key] = aggregated.get(key, 0) + numeric_val
+                    except (TypeError, ValueError):
+                        pass  # Skip non-numeric fields
+            monthly_data = [aggregated]
+
         # Return FLAT ARRAY directly (no wrapper!)
         # Cache Result (5 minutes)
-        print("DEBUG: Returning Data")
         cache.set(cache_key, monthly_data, ttl=300)
         return monthly_data
 
