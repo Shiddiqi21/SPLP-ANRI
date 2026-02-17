@@ -1099,7 +1099,7 @@
             const tableId = document.getElementById('table-selector').value;
             const instansiId = document.getElementById('filter-instansi-input').value; // Get Filter
 
-            console.log(`[DEBUG] loadStatistics for Table ID: ${tableId}`);
+            // console.log(`[DEBUG] loadStatistics for Table ID: ${tableId}`);
             try {
                 const timestamp = new Date().getTime();
                 let url = tableId ? `${API_BASE}/tables/${tableId}/statistics?t=${timestamp}` : `${API_BASE}/statistics?t=${timestamp}`;
@@ -1110,12 +1110,12 @@
                 }
 
                 console.time("fetchStats");
-                console.log(`[DEBUG] Fetching Stats: ${url}`);
+                // console.log(`[DEBUG] Fetching Stats: ${url}`);
                 const response = await fetch(url);
                 const result = await response.json();
                 console.timeEnd("fetchStats");
                 const stats = result.data || result; // Unwrapper because API returns {data: {...}}
-                console.log("[DEBUG] Stats Result:", stats);
+                // console.log("[DEBUG] Stats Result:", stats);
 
                 if (!stats) return;
 

@@ -421,7 +421,7 @@ class TableService:
             if not table:
                 return None
             
-            print(f"[DEBUG] get_statistics called for Table ID: {table_id}, Instansi: {instansi_id}")
+            # print(f"[DEBUG] get_statistics called for Table ID: {table_id}, Instansi: {instansi_id}")
             
             safe_name = self._sanitize_name(table.name)
             
@@ -447,15 +447,14 @@ class TableService:
                 
             except Exception as e:
                 import traceback
-                print(f"Error getting stats: {e}")
-                traceback.print_exc()
+                # print(f"Error getting stats: {e}")
+                # traceback.print_exc()
                 return {
                     "total_instansi": 0, "total_unit_kerja": 0, "grand_total": 0, "column_stats": {}
                 }
             
             # 2. Column Sums
             summable_cols = [c for c in table.columns if c.is_summable]
-            print(f"[DEBUG] Summable columns for table '{table.name}': {[c.name for c in summable_cols]}")
             
             col_stats = {}
             grand_total = 0
@@ -472,7 +471,7 @@ class TableService:
                 # Check if summary exists
                 if summary_service.check_summary_exists(table.id):
                     safe_name = summary_service.get_summary_table_name(table.id)
-                    print(f"[DEBUG] Using Summary Table: {safe_name} for Table ID {table_id}")
+                    # print(f"[DEBUG] Using Summary Table: {safe_name} for Table ID {table_id}")
                 else:
                     safe_name = self._sanitize_name(table.name)
                 

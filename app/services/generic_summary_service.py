@@ -145,9 +145,12 @@ class GenericSummaryService:
 
     def check_summary_exists(self, table_id: int) -> bool:
         """Check if summary table exists"""
-        table_name = self.get_summary_table_name(table_id)
-        path = self.inspector.get_table_columns(table_name)
-        return len(path) > 0
+        try:
+            table_name = self.get_summary_table_name(table_id)
+            path = self.inspector.get_table_columns(table_name)
+            return len(path) > 0
+        except Exception:
+            return False
 
     def update_summary_row(self, table_id: int, unit_kerja_id: int, date_val: Date):
         """
