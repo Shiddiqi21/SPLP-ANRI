@@ -120,9 +120,9 @@ async def delete_table(table_id: int):
     return result
 
 @router.get("/{table_id}/statistics", summary="Get Table Statistics")
-async def get_table_statistics(table_id: int):
+async def get_table_statistics(table_id: int, instansi_id: Optional[int] = Query(None)):
     """Get aggregated statistics for a table"""
-    stats = table_service.get_statistics(table_id)
+    stats = table_service.get_statistics(table_id, instansi_id=instansi_id)
     if stats is None:
         raise HTTPException(status_code=404, detail="Table not found")
     return {"status": "success", "data": stats}

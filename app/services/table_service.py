@@ -414,7 +414,7 @@ class TableService:
             }
 
     @cached(prefix="stats_table", ttl=300)
-    def get_statistics(self, table_id: int) -> Dict[str, Any]:
+    def get_statistics(self, table_id: int, instansi_id: Optional[int] = None) -> Dict[str, Any]:
         """Get statistics from PHYSICAL table"""
         with get_db_context() as db:
             table = db.query(TableDefinition).options(joinedload(TableDefinition.columns)).filter(TableDefinition.id == table_id).first()
@@ -425,16 +425,23 @@ class TableService:
             
             try:
                 # 1. Total Instansi & Unit (Query Master Data directly for speed)
-                # Previously queried transaction table with DISTINCT which is slow on 2M+ rows.
-                # Since the dashboard cards link to the full list of Master Data, these counts should match the Master Data count.
+                params = {}
                 
-                count_unit_sql = "SELECT COUNT(*) FROM unit_kerja"
-                total_unit = db.execute(text(count_unit_sql)).scalar()
-                
-                count_inst_sql = "SELECT COUNT(*) FROM instansi"
-                total_instansi = db.execute(text(count_inst_sql)).scalar()
-                
-                total_instansi = db.execute(text(count_inst_sql)).scalar()
+                if instansi_id:
+                    # If specific Instansi selected, count is 1 (or just return the ID if valid)
+                    total_instansi = 1
+                    
+                    # Unit Kerja linked to this Instansi
+                    count_unit_sql = "SELECT COUNT(*) FROM unit_kerja WHERE instansi_id = :iid"
+                    params['iid'] = instansi_id
+                    total_unit = db.execute(text(count_unit_sql), params).scalar()
+                else:
+                    # Global counts
+                    count_inst_sql = "SELECT COUNT(*) FROM instansi"
+                    total_instansi = db.execute(text(count_inst_sql)).scalar()
+                    
+                    count_unit_sql = "SELECT COUNT(*) FROM unit_kerja"
+                    total_unit = db.execute(text(count_unit_sql)).scalar()
                 
             except Exception as e:
                 import traceback
@@ -451,13 +458,31 @@ class TableService:
             grand_total = 0
             
             if summable_cols:
-                sums = [f"SUM({self._sanitize_name(c.name)}) as {self._sanitize_name(c.name)}" for c in summable_cols]
+                sums = [f"SUM(t.{self._sanitize_name(c.name)}) as {self._sanitize_name(c.name)}" for c in summable_cols]
                 # Also sum total column
-                sums.append("SUM(total) as grand_total")
+                sums.append("SUM(t.total) as grand_total")
                 
-                agg_sql = f"SELECT {', '.join(sums)} FROM {safe_name}"
+                # OPTIMIZATION: Use Summary Table if available
+                from app.services.generic_summary_service import GenericSummaryService
+                summary_service = GenericSummaryService(db)
+                
+                # Check if summary exists
+                if summary_service.check_summary_exists(table.id):
+                    safe_name = summary_service.get_summary_table_name(table.id)
+                    # print(f"[DEBUG] Using Summary Table: {safe_name} for Table ID {table_id}")
+                else:
+                    safe_name = self._sanitize_name(table.name)
+                
+                # Base query
+                agg_sql = f"SELECT {', '.join(sums)} FROM {safe_name} t"
+                
+                # Add Filter if needed
+                if instansi_id:
+                    agg_sql += " JOIN unit_kerja u ON t.unit_kerja_id = u.id WHERE u.instansi_id = :iid"
+                    # params['iid'] is already set above
+                
                 try:
-                    res = db.execute(text(agg_sql)).mappings().first()
+                    res = db.execute(text(agg_sql), params).mappings().first()
                     if res:
                         grand_total = res.get('grand_total') or 0
                         for c in summable_cols:

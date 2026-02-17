@@ -952,7 +952,7 @@
     <script>
         const API_BASE = '/api';
         let currentPage = 1;
-        const pageSize = 20;
+        const pageSize = 50;
         let currentTableId = null;
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -1094,32 +1094,44 @@
 
         // --- 2. Statistics & Clickable Cards ---
         async function loadStatistics() {
+            console.time("loadStatistics");
             const container = document.getElementById('stats-container');
             const tableId = document.getElementById('table-selector').value;
+            const instansiId = document.getElementById('filter-instansi-input').value; // Get Filter
 
             try {
                 const timestamp = new Date().getTime();
                 let url = tableId ? `${API_BASE}/tables/${tableId}/statistics?t=${timestamp}` : `${API_BASE}/statistics?t=${timestamp}`;
+
+                // Append Instansi Filter
+                if (instansiId) {
+                    url += `&instansi_id=${instansiId}`;
+                }
+
+                console.time("fetchStats");
                 const response = await fetch(url);
                 const result = await response.json();
+                console.timeEnd("fetchStats");
                 const stats = result.data || result; // Unwrapper because API returns {data: {...}}
 
                 if (!stats) return;
 
                 container.innerHTML = '';
 
-                // Total Instansi (Clickable)
-                container.appendChild(createStatCard(
-                    'Total Instansi',
-                    stats.total_instansi || 0,
-                    'red',
-                    '<path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h8v2zm0-4h-8v-2h8v2zm0-4h-8V9h8v2z"/>',
-                    'instansi' // Type for modal
-                ));
+                // Total Instansi (Clickable) - ONLY AUTO-SHOW IF NO INSTANSI SELECTED
+                if (!instansiId) {
+                    container.appendChild(createStatCard(
+                        'Total Instansi',
+                        stats.total_instansi || 0,
+                        'red',
+                        '<path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h8v2zm0-4h-8v-2h8v2zm0-4h-8V9h8v2z"/>',
+                        'instansi' // Type for modal
+                    ));
+                }
 
                 // Total Unit Kerja (Clickable)
                 container.appendChild(createStatCard(
-                    'Total Unit Kerja',
+                    instansiId ? 'Unit Kerja (Tefilter)' : 'Total Unit Kerja',
                     stats.total_unit_kerja || 0,
                     'green',
                     '<path d="M4 11h5V5H4v6zm0 7h5v-6H4v6zm6 0h5v-6h-5v6zm6 0h5v-6h-5v6zm-6-7h5V5h-5v6zm6-6v6h5V5h-5z"/>',
@@ -1150,6 +1162,7 @@
             } catch (error) {
                 console.error('Error loading stats:', error);
             }
+            console.timeEnd("loadStatistics");
         }
 
         function createStatCard(title, value, colorClass, iconPath, type = null) {
@@ -1298,12 +1311,32 @@
 
         // --- 3. Filters & Data Loading ---
         async function populateFilterDropdowns() {
+            console.time("populateFilterDropdowns");
             try {
                 // Instansi
-                // Instansi
-                const resInst = await fetch(`${API_BASE}/instansi?limit=2500&t=${Date.now()}`);
+                const timestamp = new Date().getTime();
+
+                console.time("fetchInstansi");
+                console.log(`Fetching Instansi from: ${API_BASE}/instansi?limit=50&t=${timestamp}`);
+                const resInst = await fetch(`${API_BASE}/instansi?limit=50&t=${timestamp}`);
+                if (!resInst.ok) throw new Error(`Failed to fetch instansi: ${resInst.status} ${resInst.statusText}`);
+
                 const instansiResult = await resInst.json();
-                const instansiList = instansiResult.data || instansiResult;
+                console.timeEnd("fetchInstansi");
+
+                console.log('Instansi Data Raw:', instansiResult);
+
+                let instansiList = [];
+                if (Array.isArray(instansiResult.data)) {
+                    instansiList = instansiResult.data;
+                } else if (Array.isArray(instansiResult)) {
+                    instansiList = instansiResult;
+                } else {
+                    console.error("Critical: API response is not an array", instansiResult);
+                    instansiList = [];
+                }
+
+                console.log(`Parsed ${instansiList.length} instansi items.`);
 
                 const selectInst = document.getElementById('filter-instansi-input');
                 const formInstSelect = document.getElementById('input-instansi-filter');
@@ -1340,22 +1373,18 @@
                     }
                 });
 
-                // Units (Preload all for efficient client-side filtering)
-                // Units (Preload all for efficient client-side filtering)
-                const resUnit = await fetch(`${API_BASE}/unit-kerja?limit=5000&t=${Date.now()}`);
+                // Units: Fetch top 50 for initial display
+                console.time("fetchUnits");
+                const resUnit = await fetch(`${API_BASE}/unit-kerja?limit=50&t=${Date.now()}`);
                 const unitResult = await resUnit.json();
-                const unitList = unitResult.data || unitResult;
+                console.timeEnd("fetchUnits");
 
-                window.allUnitsFormatted = unitList.map(u => ({
-                    id: u.id,
-                    nama: u.nama,
-                    instansi_id: u.instansi_id || (u.instansi ? u.instansi.id : null)
-                }));
+                const unitList = unitResult.data || unitResult;
 
                 // Initial populate
                 const selectUnit = document.getElementById('filter-unit-kerja-input');
                 selectUnit.innerHTML = '<option value="">Semua Unit Kerja</option>';
-                window.allUnitsFormatted.forEach(u => {
+                unitList.forEach(u => {
                     const opt = document.createElement('option');
                     opt.value = u.id;
                     opt.textContent = u.nama;
@@ -1365,59 +1394,90 @@
             } catch (e) {
                 console.error("Error populating filters", e);
             }
+            console.timeEnd("populateFilterDropdowns");
         }
 
         // --- Input Form Logic ---
-        window.filterUnitKerjaSelect = function (instansiId) {
+        window.filterUnitKerjaSelect = async function (instansiId) {
             const unitSelect = document.getElementById('data-unit');
-            unitSelect.innerHTML = '<option value="">Pilih Instansi Terlebih Dahulu</option>';
-            unitSelect.disabled = true;
+            // Check if we are in Filter Mode (selectUnit) or Input Mode (unitSelect)
+            // The function name suggests Input Form, but let's handle Filter Dropdown too if needed
 
-            if (!instansiId) return;
+            const filterUnitSelect = document.getElementById('filter-unit-kerja-input');
 
-            // Instansi Selected, filter units directly by instansi_id
-            unitSelect.disabled = false;
-            unitSelect.innerHTML = '<option value="">Pilih Unit Kerja</option>';
+            // 1. Handle Input Form Unit Select (if exists)
+            if (unitSelect) {
+                unitSelect.innerHTML = '<option value="">Memuat...</option>';
+                unitSelect.disabled = true;
+            }
 
-            const filteredUnits = window.allUnitsFormatted.filter(u => u.instansi_id == instansiId);
+            // 2. Handle Filter Dropdown Unit Select
+            if (filterUnitSelect) {
+                filterUnitSelect.innerHTML = '<option value="">Memuat...</option>';
+                filterUnitSelect.disabled = true;
+            }
 
-            if (filteredUnits.length > 0) {
-                // Sort alphabetically
-                filteredUnits.sort((a, b) => a.nama.localeCompare(b.nama));
-
-                filteredUnits.forEach(u => {
-                    const opt = document.createElement('option');
-                    opt.value = u.id;
-                    opt.textContent = u.nama;
-                    unitSelect.appendChild(opt);
-                });
+            let url = '';
+            if (!instansiId) {
+                // If no Instansi selected, fetch top 50 global units
+                url = `${API_BASE}/unit-kerja?limit=50`;
             } else {
-                unitSelect.innerHTML = '<option value="">Tidak ada unit kerja</option>';
+                // If Instansi selected, fetch all units for that instansi
+                url = `${API_BASE}/instansi/${instansiId}/unit-kerja?limit=5000`;
+            }
+
+            try {
+                const res = await fetch(url);
+                const result = await res.json();
+                const units = result.data || result;
+
+                if (Array.isArray(units)) {
+                    units.sort((a, b) => a.nama.localeCompare(b.nama));
+
+                    // Populate Input Form
+                    if (unitSelect) {
+                        unitSelect.innerHTML = '<option value="">Pilih Unit Kerja</option>';
+                        unitSelect.disabled = false;
+                        units.forEach(u => {
+                            const opt = document.createElement('option');
+                            opt.value = u.id;
+                            opt.textContent = u.nama;
+                            unitSelect.appendChild(opt);
+                        });
+                    }
+
+                    // Populate Filter Dropdown
+                    if (filterUnitSelect) {
+                        filterUnitSelect.innerHTML = '<option value="">Semua Unit Kerja</option>';
+                        filterUnitSelect.disabled = false;
+                        units.forEach(u => {
+                            const opt = document.createElement('option');
+                            opt.value = u.id;
+                            opt.textContent = u.nama;
+                            filterUnitSelect.appendChild(opt);
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error("Error fetching units:", error);
+                if (unitSelect) unitSelect.innerHTML = '<option value="">Gagal memuat data</option>';
+                if (filterUnitSelect) filterUnitSelect.innerHTML = '<option value="">Gagal memuat data</option>';
             }
         };
 
 
 
         // Listener for Instansi Filter -> Filter Unit Dropdown
-        document.getElementById('filter-instansi-input').addEventListener('change', function () {
+        // Listener for Instansi Filter -> Filter Unit Dropdown
+        document.getElementById('filter-instansi-input').addEventListener('change', async function () {
             const instansiId = this.value;
-            const unitSelect = document.getElementById('filter-unit-kerja-input');
-            const allUnits = window.allUnitsFormatted || [];
 
-            unitSelect.innerHTML = '<option value="">Semua Unit Kerja</option>';
+            // Call the new async function to fetch units from API
+            await window.filterUnitKerjaSelect(instansiId);
 
-            const filtered = instansiId
-                ? allUnits.filter(u => u.instansi_id == instansiId)
-                : allUnits;
-
-            filtered.forEach(u => {
-                const opt = document.createElement('option');
-                opt.value = u.id;
-                opt.textContent = u.nama;
-                unitSelect.appendChild(opt);
-            });
-
+            // Reload Data and Stats
             loadData(1);
+            loadStatistics();
         });
 
         document.getElementById('filter-unit-kerja-input').addEventListener('change', function () {
@@ -1467,14 +1527,12 @@
                 thead.innerHTML = headersHTML;
 
                 // Data Query
-                // When no date filter, limit to 50 rows for fast loading
-                const hasDateFilter = !!tanggal;
-                const effectiveLimit = hasDateFilter ? pageSize : 50;
-                const effectiveOffset = hasDateFilter ? (page - 1) * pageSize : 0;
+                const limit = pageSize;
+                const offset = (page - 1) * pageSize;
 
                 const params = new URLSearchParams({
-                    limit: effectiveLimit,
-                    offset: effectiveOffset
+                    limit: limit,
+                    offset: offset
                 });
 
                 if (instansiId) params.append('instansi_id', instansiId);
@@ -1492,22 +1550,13 @@
 
                 tbody.innerHTML = '';
 
-                // Show info banner when no date filter (showing limited preview)
-                if (!hasDateFilter && data.length > 0) {
-                    const infoBanner = document.createElement('tr');
-                    infoBanner.innerHTML = `<td colspan="100%" style="background: linear-gradient(135deg, #3498db20, #2980b920); padding: 10px 15px; text-align: center; border-left: 4px solid #3498db; font-size: 13px; color: #2980b9;">
-                        <strong>ℹ️ Menampilkan 50 data terbaru.</strong> Gunakan filter tanggal untuk melihat data spesifik dengan lebih cepat.
-                    </td>`;
-                    tbody.appendChild(infoBanner);
-                }
-
                 if (data.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="100%" class="empty-state">Belum ada data</td></tr>';
                     renderPagination(0, 1);
                     return;
                 }
 
-                const startNo = hasDateFilter ? (page - 1) * pageSize + 1 : 1;
+                const startNo = (page - 1) * pageSize + 1;
 
                 data.forEach((item, index) => {
                     const tr = document.createElement('tr');
@@ -1542,12 +1591,8 @@
                     tbody.appendChild(tr);
                 });
 
-                // Only show pagination when date filter is active
-                if (hasDateFilter) {
-                    renderPagination(total, page);
-                } else {
-                    renderPagination(0, 1); // Hide pagination for preview mode
-                }
+                // Always render pagination
+                renderPagination(total, page);
 
             } catch (error) {
                 console.error('Error loading data:', error);

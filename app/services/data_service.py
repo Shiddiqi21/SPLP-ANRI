@@ -18,10 +18,12 @@ class DataService:
     
     def get_all_instansi(self, limit: int = 100, offset: int = 0) -> Dict[str, Any]:
         """Get all instansi with pagination"""
+        print(f"[DEBUG] Fetching all instansi. Limit={limit}, Offset={offset}")
         with get_db_context() as db:
             query = db.query(Instansi)
             total = query.count()
             data = query.order_by(Instansi.nama).offset(offset).limit(limit).all()
+            print(f"[DEBUG] Found {len(data)} instansi records. Total in DB: {total}")
             return {
                 "data": [i.to_dict() for i in data],
                 "total": total,
