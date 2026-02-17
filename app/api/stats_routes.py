@@ -221,16 +221,26 @@ def get_grafana_monthly(
         # Let's check the original GROUP BY: "GROUP BY MONTH(t.tanggal)".
         # Yes, it aggregates all units into one row per month.
         
+        # Build SQL based on source type
+        if use_summary:
+            select_month = "t.month"
+            select_month_name = "MONTHNAME(STR_TO_DATE(CONCAT(t.month, '-01'), '%Y-%m-%d'))"
+            group_by = "t.month"
+        else:
+            select_month = "DATE_FORMAT(t.tanggal, '%Y-%m')"
+            select_month_name = "MONTHNAME(t.tanggal)"
+            group_by = "DATE_FORMAT(t.tanggal, '%Y-%m')"
+
         sql = f"""
             SELECT 
-                t.month as bulan,
-                MONTHNAME(STR_TO_DATE(CONCAT(t.month, '-01'), '%Y-%m-%d')) as nama_bulan,
-                {', '.join(sum_expressions).replace('MONTH(t.tanggal)', 't.month')}
+                {select_month} as bulan,
+                {select_month_name} as nama_bulan,
+                {', '.join(sum_expressions)}
             FROM {safe_table_name} t
             {join_clause}
             WHERE {' AND '.join(where_conditions)}
-            GROUP BY t.month
-            ORDER BY t.month
+            GROUP BY {group_by}
+            ORDER BY {group_by}
         """
         
         try:

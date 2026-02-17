@@ -3,7 +3,7 @@ Service untuk mengelola definisi tabel dinamis (Versi Fisik / Physical Table)
 """
 from sqlalchemy import text
 from typing import Dict, Any, List, Optional
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from app.database import get_db
 
 from app.services.cache_service import cache, cached
@@ -277,84 +277,110 @@ class TableService:
             # Check if table exists (to avoid error queries on old metadata that has no physical table)
             # For now assume it exists or catch error
             
-            # Build Query
-            query = f"""
-                SELECT t.*, u.nama as unit_nama, i.nama as instansi_nama 
-                FROM {safe_name} t
-                JOIN unit_kerja u ON t.unit_kerja_id = u.id
-                JOIN instansi i ON u.instansi_id = i.id
-                WHERE 1=1
-            """
+            # Build Query - Two strategies based on whether date filter is present
+            # Sanitize inputs first
+            if not instansi_id: instansi_id = None
+            if not unit_kerja_id: unit_kerja_id = None
+            if not tanggal_start: tanggal_start = None
+            if not tanggal_end: tanggal_end = None
+            
+            has_date_filter = any([tanggal_start, tanggal_end])
             params = {}
             
-            if unit_kerja_id:
-                query += " AND t.unit_kerja_id = :unit_id"
-                params['unit_id'] = unit_kerja_id
-            
-            if instansi_id:
-                query += " AND u.instansi_id = :instansi_id"
-                params['instansi_id'] = instansi_id
+            if not has_date_filter:
+                # ===== FAST PATH: No date filter =====
+                # Step 1: Get IDs quickly using primary key index (instant)
+                id_query = f"SELECT t.id FROM {safe_name} t"
+                id_where = ["1=1"]
                 
-            if tanggal_start:
-                query += " AND t.tanggal >= :t_start"
-                params['t_start'] = tanggal_start
-            
-            if tanggal_end:
-                query += " AND t.tanggal <= :t_end"
-                params['t_end'] = tanggal_end
+                if instansi_id:
+                    id_query += " JOIN unit_kerja u ON t.unit_kerja_id = u.id"
+                    id_where.append("u.instansi_id = :instansi_id")
+                    params['instansi_id'] = instansi_id
                 
-            # Count total (Optimized)
-            try:
-                # Use cache if no filters are active
+                if unit_kerja_id:
+                    id_where.append("t.unit_kerja_id = :unit_id")
+                    params['unit_id'] = unit_kerja_id
+                
+                id_query += " WHERE " + " AND ".join(id_where)
+                id_query += " ORDER BY t.id DESC LIMIT :limit OFFSET :offset"
+                params['limit'] = limit
+                params['offset'] = offset
+                
+                id_rows = db.execute(text(id_query), params).fetchall()
+                
+                if not id_rows:
+                    return {"data": [], "total": 0}
+                
+                ids = [r[0] for r in id_rows]
+                
+                # Step 2: Get full data for only these IDs (JOIN on tiny set = instant)
+                query = f"""
+                    SELECT t.*, u.nama as unit_nama, i.nama as instansi_nama 
+                    FROM {safe_name} t
+                    JOIN unit_kerja u ON t.unit_kerja_id = u.id
+                    JOIN instansi i ON u.instansi_id = i.id
+                    WHERE t.id IN ({','.join(str(i) for i in ids)})
+                    ORDER BY t.id DESC
+                """
+                
+                # Step 3: Approximate total (skip COUNT(*))
                 cache_key = f"total_count_{table_id}"
-                total = None
-                has_filters = any([instansi_id, unit_kerja_id, tanggal_start, tanggal_end])
-                
-                if not has_filters:
-                    total = cache.get(cache_key)
-                
+                total = cache.get(cache_key)
                 if total is None:
-                    # Build count query separately to avoid unnecessary joins
-                    count_query = f"SELECT COUNT(*) FROM {safe_name} t"
-                    count_params = {}
-                    count_where = ["1=1"]
+                    try:
+                        status_sql = f"SHOW TABLE STATUS LIKE '{safe_name}'"
+                        status_res = db.execute(text(status_sql)).mappings().one_or_none()
+                        if status_res and status_res.get('Rows') is not None:
+                            total = int(status_res['Rows'])
+                            cache.set(cache_key, total, ttl=300)
+                    except Exception:
+                        pass
+                if total is None:
+                    total = 100000
+                
+                rows = db.execute(text(query)).mappings().all()
+            else:
+                # ===== NORMAL PATH: With date filter (small dataset, JOINs are fast) =====
+                query = f"""
+                    SELECT t.*, u.nama as unit_nama, i.nama as instansi_nama 
+                    FROM {safe_name} t
+                    JOIN unit_kerja u ON t.unit_kerja_id = u.id
+                    JOIN instansi i ON u.instansi_id = i.id
+                    WHERE 1=1
+                """
+                
+                if unit_kerja_id:
+                    query += " AND t.unit_kerja_id = :unit_id"
+                    params['unit_id'] = unit_kerja_id
+                
+                if instansi_id:
+                    query += " AND u.instansi_id = :instansi_id"
+                    params['instansi_id'] = instansi_id
                     
-                    # Only join if filtering by instansi (need u.instansi_id)
-                    if instansi_id:
-                         count_query += " JOIN unit_kerja u ON t.unit_kerja_id = u.id"
-                         count_where.append("u.instansi_id = :instansi_id")
-                         count_params['instansi_id'] = instansi_id
-                    
-                    if unit_kerja_id:
-                        count_where.append("t.unit_kerja_id = :unit_id")
-                        count_params['unit_id'] = unit_kerja_id
-
-                    if tanggal_start:
-                        count_where.append("t.tanggal >= :t_start")
-                        count_params['t_start'] = tanggal_start
-                    
-                    if tanggal_end:
-                        count_where.append("t.tanggal <= :t_end")
-                        count_params['t_end'] = tanggal_end
-                    
-                    count_query += " WHERE " + " AND ".join(count_where)
-                    
-                    total = db.execute(text(count_query), count_params).scalar()
-                    
-                    # Cache the total if no filters (TTL 5 mins)
-                    if not has_filters:
-                        cache.set(cache_key, total, ttl=300)
-                        
-            except Exception:
-                # Likely table lookup failed
-                return {"data": [], "total": 0}
-            
-            # Fetch data using cursor mappings
-            query += " ORDER BY t.tanggal DESC LIMIT :limit OFFSET :offset"
-            params['limit'] = limit
-            params['offset'] = offset
-            
-            rows = db.execute(text(query), params).mappings().all()
+                if tanggal_start:
+                    query += " AND t.tanggal >= :t_start"
+                    params['t_start'] = tanggal_start
+                
+                if tanggal_end:
+                    query += " AND t.tanggal <= :t_end"
+                    params['t_end'] = tanggal_end
+                
+                # COUNT(*) is fast on date-filtered data
+                count_query = query.replace(
+                    f"SELECT t.*, u.nama as unit_nama, i.nama as instansi_nama",
+                    "SELECT COUNT(*)"
+                )
+                try:
+                    total = db.execute(text(count_query), params).scalar()
+                except Exception:
+                    total = 0
+                
+                query += " ORDER BY t.tanggal DESC LIMIT :limit OFFSET :offset"
+                params['limit'] = limit
+                params['offset'] = offset
+                
+                rows = db.execute(text(query), params).mappings().all()
             
             formatted_data = []
             for row in rows:
@@ -568,7 +594,7 @@ class TableService:
                     update_sets.append("total = :total")
                     params["total"] = new_total
                     update_sets.append("updated_at = :now")
-                    params["now"] = datetime.utcnow()
+                    params["now"] = datetime.now(timezone.utc)
                     
                     sql = f"UPDATE {safe_name} SET {', '.join(update_sets)} WHERE id = :id"
                     session.execute(text(sql), params)
@@ -677,7 +703,7 @@ class TableService:
 
                 # Always update updated_at if possible
                 update_sets.append("updated_at = :now")
-                params["now"] = datetime.utcnow()
+                params["now"] = datetime.now(timezone.utc)
                 
                 if update_sets:
                     # Update total if we have summable columns

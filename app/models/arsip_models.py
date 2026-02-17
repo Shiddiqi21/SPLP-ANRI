@@ -1,10 +1,15 @@
 """
 SQLAlchemy Models untuk SPLP Data Integrator
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, String, Date, DateTime, ForeignKey, Text
 from sqlalchemy.orm import relationship
 from app.database import Base
+
+
+def _utcnow():
+    """UTC now compatible with Python 3.12+"""
+    return datetime.now(timezone.utc)
 
 
 class Instansi(Base):
@@ -14,8 +19,8 @@ class Instansi(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     kode = Column(String(20), unique=True, nullable=False)
     nama = Column(String(255), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
     
     # Relationship
     unit_kerja = relationship("UnitKerja", back_populates="instansi", cascade="all, delete-orphan")
@@ -38,8 +43,8 @@ class UnitKerja(Base):
     instansi_id = Column(Integer, ForeignKey("instansi.id", ondelete="CASCADE"), nullable=False)
     kode = Column(String(50), nullable=False)
     nama = Column(String(255), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
     
     # Relationships
     instansi = relationship("Instansi", back_populates="unit_kerja")
@@ -74,8 +79,8 @@ class DataArsip(Base):
     retensi_musnah = Column(Integer, default=0)
     naskah_ditindaklanjuti = Column(Integer, default=0)
     total = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
     
     # Relationship
     unit_kerja = relationship("UnitKerja", back_populates="data_arsip")

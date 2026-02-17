@@ -1,3 +1,4 @@
+# Reload Trigger 1
 """
 SPLP Data Integrator - Main Application
 Arsip Nasional Republik Indonesia
@@ -8,7 +9,6 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
 from contextlib import asynccontextmanager
-from apscheduler.schedulers.background import BackgroundScheduler
 import os
 
 from app.config import get_settings
@@ -17,7 +17,6 @@ from app.api.arsip_routes import router as arsip_router
 from app.api.summary_routes import router as summary_router
 from app.api.auth_routes import router as auth_router
 from app.api.data_routes import router as data_router
-from app.api.summary_routes import router as summary_router
 from app.api.upload_routes import router as upload_router
 from app.api.table_routes import router as table_router
 from app.api.stats_routes import router as stats_router
@@ -28,25 +27,8 @@ from app.services.auth_service import auth_service
 
 settings = get_settings()
 
-# Scheduler for background jobs
-scheduler = BackgroundScheduler()
-
 # Base directory
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-
-def scheduled_sync():
-    """Background job untuk sync data"""
-    print(f"[Scheduler] Running data sync...")
-    result = integrator_service.sync_data()
-    print(f"[Scheduler] Sync complete: {result}")
-
-
-def scheduled_aggregation():
-    """Background job untuk update aggregated data"""
-    print(f"[Scheduler] Running data aggregation...")
-    result = aggregation_service.run_all_aggregations()
-    print(f"[Scheduler] Aggregation complete")
 
 
 @asynccontextmanager
@@ -57,18 +39,12 @@ async def lifespan(app: FastAPI):
     print("  SPLP Data Integrator v2.2 Starting...")
     print("=" * 50)
     print("[Database] Skipping table checks (already initialized)")
-    print("[Scheduler] DISABLED - Manual sync only (use /api/integrator/sync)")
+    print("[Sync] Manual sync only (use /api/sync)")
     print("[Server] Ready to accept connections!")
-
     
     yield
     
     # Shutdown
-    try:
-        if scheduler.running:
-            scheduler.shutdown()
-    except Exception:
-        pass  # Ignore scheduler shutdown errors
     print("SPLP Data Integrator Stopped")
 
 

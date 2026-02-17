@@ -44,6 +44,9 @@ async def upload_file(
     upload_service = UploadService(db)
     result = upload_service.process_upload(content, file.filename, table_id=table_id)
     
+    # Free file content from memory immediately
+    del content
+    
     if not result["success"] and result["stats"]["inserted"] == 0 and result["stats"]["updated"] == 0:
         raise HTTPException(status_code=400, detail=result)
     

@@ -1,10 +1,15 @@
 """
 SQLAlchemy Models untuk Dynamic Table System
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, String, Date, DateTime, ForeignKey, Text, Boolean, JSON
 from sqlalchemy.orm import relationship
 from app.database import Base
+
+
+def _utcnow():
+    """UTC now compatible with Python 3.12+"""
+    return datetime.now(timezone.utc)
 
 
 class TableDefinition(Base):
@@ -16,8 +21,8 @@ class TableDefinition(Base):
     display_name = Column(String(255), nullable=False)  # Nama tampilan
     description = Column(Text, nullable=True)
     is_default = Column(Boolean, default=False)  # Tandai tabel default
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
     
     # Relationships
     columns = relationship("ColumnDefinition", back_populates="table", cascade="all, delete-orphan", order_by="ColumnDefinition.order")
@@ -50,7 +55,7 @@ class ColumnDefinition(Base):
     is_required = Column(Boolean, default=False)
     is_summable = Column(Boolean, default=True)  # Apakah ikut dihitung di total
     order = Column(Integer, default=0)  # Urutan tampilan
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=_utcnow)
     
     # Relationship
     table = relationship("TableDefinition", back_populates="columns")

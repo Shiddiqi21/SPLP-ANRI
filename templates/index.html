@@ -1467,14 +1467,18 @@
                 thead.innerHTML = headersHTML;
 
                 // Data Query
+                // When no date filter, limit to 50 rows for fast loading
+                const hasDateFilter = !!tanggal;
+                const effectiveLimit = hasDateFilter ? pageSize : 50;
+                const effectiveOffset = hasDateFilter ? (page - 1) * pageSize : 0;
+
                 const params = new URLSearchParams({
-                    limit: pageSize,
-                    offset: (page - 1) * pageSize
+                    limit: effectiveLimit,
+                    offset: effectiveOffset
                 });
 
                 if (instansiId) params.append('instansi_id', instansiId);
                 if (unitId) params.append('unit_kerja_id', unitId);
-                if (tanggal) params.append('tanggal_start', tanggal);
                 if (tanggal) params.append('tanggal_start', tanggal);
                 if (tanggal) params.append('tanggal_end', tanggal);
                 params.append('_t', Date.now()); // Cache busting
@@ -1488,13 +1492,22 @@
 
                 tbody.innerHTML = '';
 
+                // Show info banner when no date filter (showing limited preview)
+                if (!hasDateFilter && data.length > 0) {
+                    const infoBanner = document.createElement('tr');
+                    infoBanner.innerHTML = `<td colspan="100%" style="background: linear-gradient(135deg, #3498db20, #2980b920); padding: 10px 15px; text-align: center; border-left: 4px solid #3498db; font-size: 13px; color: #2980b9;">
+                        <strong>ℹ️ Menampilkan 50 data terbaru.</strong> Gunakan filter tanggal untuk melihat data spesifik dengan lebih cepat.
+                    </td>`;
+                    tbody.appendChild(infoBanner);
+                }
+
                 if (data.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="100%" class="empty-state">Belum ada data</td></tr>';
                     renderPagination(0, 1);
                     return;
                 }
 
-                const startNo = (page - 1) * pageSize + 1;
+                const startNo = hasDateFilter ? (page - 1) * pageSize + 1 : 1;
 
                 data.forEach((item, index) => {
                     const tr = document.createElement('tr');
@@ -1529,7 +1542,12 @@
                     tbody.appendChild(tr);
                 });
 
-                renderPagination(total, page);
+                // Only show pagination when date filter is active
+                if (hasDateFilter) {
+                    renderPagination(total, page);
+                } else {
+                    renderPagination(0, 1); // Hide pagination for preview mode
+                }
 
             } catch (error) {
                 console.error('Error loading data:', error);
@@ -1541,9 +1559,8 @@
             document.getElementById('filter-instansi-input').value = '';
             document.getElementById('filter-unit-kerja-input').value = '';
 
-            // Default to Today for performance
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('filter-tanggal').value = today;
+            // Default to empty (Show All)
+            document.getElementById('filter-tanggal').value = '';
 
             // Reset unit dropdown
             const unitSelect = document.getElementById('filter-unit-kerja-input');

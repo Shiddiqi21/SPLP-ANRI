@@ -12,6 +12,13 @@ class GenericSummaryService:
         self.db = db
         self.inspector = SchemaInspector()
 
+    def _sanitize_table_name(self, name: str) -> str:
+        """Sanitize table name to prevent SQL injection"""
+        import re
+        if not re.match(r'^[a-zA-Z0-9_]+$', name):
+            raise ValueError(f"Invalid table name: {name}")
+        return name
+
     def get_summary_table_name(self, table_id: int) -> str:
         # Check if this is the core data_arsip table (usually ID 1, but better check name)
         # Since we don't have name here, we might need to fetch it.
@@ -39,8 +46,8 @@ class GenericSummaryService:
         if not table_def:
             return {"success": False, "message": "Table definition not found"}
 
-        source_table_name = table_def.name
-        summary_table_name = self.get_summary_table_name(table_id)
+        source_table_name = self._sanitize_table_name(table_def.name)
+        summary_table_name = self._sanitize_table_name(self.get_summary_table_name(table_id))
 
         # 2. Check source columns
         columns = self.inspector.get_table_columns(source_table_name)
