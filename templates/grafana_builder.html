@@ -479,376 +479,367 @@
                             <!-- Moved to top -->
                         </div>
                         <div class="form-check" style="margin-top: 8px;">
-                            <div class="form-check" style="margin-top: 8px;">
-                                <input class="form-check-input" type="checkbox" id="includeTotal" checked
-                                    style="accent-color: #4CAF50;">
-                                <label class="form-check-label" for="includeTotal"
-                                    style="font-weight: 600; color: #4CAF50;">
-                                    <i class="bi bi-plus-circle"></i> Sertakan Kolom Total <span class="small-text"
-                                        style="font-weight: normal; color: #666;">(uncheck jika ingin menyembunyikan
-                                        Total)</span>
-                                </label>
-                            </div>
-                            <div class="form-check" style="margin-top: 8px;">
-                                <input class="form-check-input" type="checkbox" id="excludeMeta"
-                                    style="accent-color: #E91E63;">
-                                <label class="form-check-label" for="excludeMeta"
-                                    style="font-weight: 600; color: #E91E63;">
-                                    <i class="bi bi-pie-chart"></i> Exclude Bulan dari response <span class="small-text"
-                                        style="font-weight: normal; color: #666;">(centang ini untuk Pie Chart agar
-                                        field
-                                        Bulan tidak muncul)</span>
-                                </label>
-                            </div>
+                            <!-- Total option moved to column picker -->
+                        </div>
+                        <div class="form-check" style="margin-top: 8px;">
+                            <input class="form-check-input" type="checkbox" id="excludeMeta"
+                                style="accent-color: #E91E63;">
+                            <label class="form-check-label" for="excludeMeta" style="font-weight: 600; color: #E91E63;">
+                                <i class="bi bi-pie-chart"></i> Exclude Bulan dari response <span class="small-text"
+                                    style="font-weight: normal; color: #666;">(centang ini untuk Pie Chart agar
+                                    field
+                                    Bulan tidak muncul)</span>
+                            </label>
                         </div>
                     </div>
+                </div>
 
-                    <hr class="section-divider">
+                <hr class="section-divider">
 
-                    <!-- Generate Button -->
-                    <div class="text-center mb-4">
-                        <button class="btn-generate" onclick="generateURL()">
-                            <i class="bi bi-lightning-charge-fill"></i> Generate URL
+                <!-- Generate Button -->
+                <div class="text-center mb-4">
+                    <button class="btn-generate" onclick="generateURL()">
+                        <i class="bi bi-lightning-charge-fill"></i> Generate URL
+                    </button>
+                </div>
+
+                <!-- Result -->
+                <div id="resultSection" style="display: none;">
+                    <label class="form-label">
+                        <i class="bi bi-clipboard-check"></i> URL untuk Grafana:
+                    </label>
+                    <div class="url-box" id="urlBox">
+                        <span id="generatedUrl"></span>
+                        <button class="btn-copy" onclick="copyURL()">
+                            <i class="bi bi-clipboard"></i> Salin
                         </button>
                     </div>
-
-                    <!-- Result -->
-                    <div id="resultSection" style="display: none;">
-                        <label class="form-label">
-                            <i class="bi bi-clipboard-check"></i> URL untuk Grafana:
-                        </label>
-                        <div class="url-box" id="urlBox">
-                            <span id="generatedUrl"></span>
-                            <button class="btn-copy" onclick="copyURL()">
-                                <i class="bi bi-clipboard"></i> Salin
-                            </button>
-                        </div>
-                        <div id="modeInfo"
-                            style="display: none; margin-top: 10px; padding: 10px 15px; border-radius: 6px; background: #fff8e1; border-left: 4px solid #FF9800; font-size: 13px;">
-                        </div>
-                        <div class="preview-box">
-                            <strong><i class="bi bi-eye"></i> Preview Data</strong>
-                            <p class="small-text mb-2">Klik untuk melihat data di tab baru sebelum paste ke Grafana</p>
-                            <a href="#" id="previewLink" target="_blank">
-                                <i class="bi bi-box-arrow-up-right"></i> Buka Preview
-                            </a>
-                        </div>
+                    <div id="modeInfo"
+                        style="display: none; margin-top: 10px; padding: 10px 15px; border-radius: 6px; background: #fff8e1; border-left: 4px solid #FF9800; font-size: 13px;">
+                    </div>
+                    <div class="preview-box">
+                        <strong><i class="bi bi-eye"></i> Preview Data</strong>
+                        <p class="small-text mb-2">Klik untuk melihat data di tab baru sebelum paste ke Grafana</p>
+                        <a href="#" id="previewLink" target="_blank">
+                            <i class="bi bi-box-arrow-up-right"></i> Buka Preview
+                        </a>
                     </div>
                 </div>
             </div>
-
-            <!-- Instructions Card -->
-            <div class="card">
-                <div class="card-body">
-                    <h5 style="color: #0288D1; margin-bottom: 15px;">
-                        <i class="bi bi-info-circle"></i> Cara Pakai di Grafana
-                    </h5>
-                    <ol class="instructions-list">
-                        <li>Salin URL yang sudah di-generate</li>
-                        <li>Buka Grafana → Buat Panel Baru</li>
-                        <li>Pilih Data Source <strong>"SPLP API"</strong> (Infinity)</li>
-                        <li>Paste URL di field <strong>URL</strong></li>
-                        <li>Pilih tipe visualisasi (Bar Chart, Pie, dll)</li>
-                        <li>Klik <strong>Apply</strong></li>
-                    </ol>
-
-                    <hr style="margin: 15px 0; border-color: #e0e0e0;">
-
-                    <h5 style="color: #0288D1; margin-bottom: 10px;">
-                        <i class="bi bi-sliders"></i> Setup Variable Filter di Grafana
-                    </h5>
-                    <p class="small-text" style="margin-bottom: 10px;">Buat Dashboard Variables di Grafana:
-                        <strong>Settings
-                            → Variables → Add Variable</strong>
-                    </p>
-                    <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
-                        <tr style="background: #f0f7ff;">
-                            <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Variable</th>
-                            <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">URL (Infinity JSON)</th>
-                            <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">JSONPath</th>
-                        </tr>
-                        <tr>
-                            <td style="padding: 8px; border: 1px solid #ddd;"><strong>Instansi</strong></td>
-                            <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; font-size: 12px;">
-                                /api/stats/instansi</td>
-                            <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; font-size: 12px;">
-                                $.instansi[*]</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 8px; border: 1px solid #ddd;"><strong>Unit Kerja</strong></td>
-                            <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; font-size: 12px;">
-                                /api/stats/unit-kerja?instansi_id=${instansi}</td>
-                            <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; font-size: 12px;">
-                                $.unit_kerja[*]</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 8px; border: 1px solid #ddd;"><strong>Bulan</strong></td>
-                            <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; font-size: 12px;">
-                                /api/stats/months</td>
-                            <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; font-size: 12px;">
-                                $.months[*]</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 8px; border: 1px solid #ddd;"><strong>Tahun</strong></td>
-                            <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; font-size: 12px;">
-                                /api/stats/grafana/var/tahun</td>
-                            <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; font-size: 12px;">
-                                $.value</td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
         </div>
 
-        <!-- Custom Modal -->
-        <div id="customModal" class="modal-overlay" style="display: none;">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <i class="bi bi-info-circle-fill" id="modalIcon"></i>
-                    <h4 id="modalTitle">Konfirmasi</h4>
-                </div>
-                <div class="modal-body" id="modalMessage">
-                    Pesan default...
-                </div>
-                <div class="modal-footer">
-                    <button class="btn-cancel" id="btnCancel" onclick="closeModal()">Batal</button>
-                    <button class="btn-confirm" id="btnConfirm">Ya, Lanjutkan</button>
-                </div>
+        <!-- Instructions Card -->
+        <div class="card">
+            <div class="card-body">
+                <h5 style="color: #0288D1; margin-bottom: 15px;">
+                    <i class="bi bi-info-circle"></i> Cara Pakai di Grafana
+                </h5>
+                <ol class="instructions-list">
+                    <li>Salin URL yang sudah di-generate</li>
+                    <li>Buka Grafana → Buat Panel Baru</li>
+                    <li>Pilih Data Source <strong>"SPLP API"</strong> (Infinity)</li>
+                    <li>Paste URL di field <strong>URL</strong></li>
+                    <li>Pilih tipe visualisasi (Bar Chart, Pie, dll)</li>
+                    <li>Klik <strong>Apply</strong></li>
+                </ol>
+
+                <hr style="margin: 15px 0; border-color: #e0e0e0;">
+
+                <h5 style="color: #0288D1; margin-bottom: 10px;">
+                    <i class="bi bi-sliders"></i> Setup Variable Filter di Grafana
+                </h5>
+                <p class="small-text" style="margin-bottom: 10px;">Buat Dashboard Variables di Grafana:
+                    <strong>Settings
+                        → Variables → Add Variable</strong>
+                </p>
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                    <tr style="background: #f0f7ff;">
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Variable</th>
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">URL (Infinity JSON)</th>
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">JSONPath</th>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong>Instansi</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; font-size: 12px;">
+                            /api/stats/instansi</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; font-size: 12px;">
+                            $.instansi[*]</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong>Unit Kerja</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; font-size: 12px;">
+                            /api/stats/unit-kerja?instansi_id=${instansi}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; font-size: 12px;">
+                            $.unit_kerja[*]</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong>Bulan</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; font-size: 12px;">
+                            /api/stats/months</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; font-size: 12px;">
+                            $.months[*]</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong>Tahun</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; font-size: 12px;">
+                            /api/stats/grafana/var/tahun</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; font-size: 12px;">
+                            $.value</td>
+                    </tr>
+                </table>
             </div>
         </div>
+    </div>
 
-        <!-- Alert Modal (Success/Error) -->
-        <div id="alertModal" class="modal-overlay" style="display: none;">
-            <div class="modal-content" style="max-width: 400px;">
-                <div class="modal-header" style="justify-content: center;">
-                    <i class="bi bi-check-circle-fill" id="alertIcon" style="font-size: 40px; color: #4CAF50;"></i>
-                </div>
-                <div class="modal-body" id="alertMessage" style="text-align: center; padding-top: 10px;">
-                    Berhasil!
-                </div>
-                <div class="modal-footer" style="justify-content: center;">
-                    <button class="btn-confirm" onclick="closeAlert()">Tutup</button>
-                </div>
+    <!-- Custom Modal -->
+    <div id="customModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <i class="bi bi-info-circle-fill" id="modalIcon"></i>
+                <h4 id="modalTitle">Konfirmasi</h4>
+            </div>
+            <div class="modal-body" id="modalMessage">
+                Pesan default...
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" id="btnCancel" onclick="closeModal()">Batal</button>
+                <button class="btn-confirm" id="btnConfirm">Ya, Lanjutkan</button>
             </div>
         </div>
+    </div>
 
-        <style>
-            .modal-overlay {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0, 0, 0, 0.5);
-                backdrop-filter: blur(4px);
-                z-index: 10000;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                animation: fadeIn 0.2s;
+    <!-- Alert Modal (Success/Error) -->
+    <div id="alertModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header" style="justify-content: center;">
+                <i class="bi bi-check-circle-fill" id="alertIcon" style="font-size: 40px; color: #4CAF50;"></i>
+            </div>
+            <div class="modal-body" id="alertMessage" style="text-align: center; padding-top: 10px;">
+                Berhasil!
+            </div>
+            <div class="modal-footer" style="justify-content: center;">
+                <button class="btn-confirm" onclick="closeAlert()">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 10000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.2s;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            animation: slideUp 0.3s;
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+            color: #0288D1;
+        }
+
+        .modal-header h4 {
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .modal-body {
+            font-size: 14px;
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .btn-confirm {
+            background: #0288D1;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .btn-confirm:hover {
+            background: #0277BD;
+        }
+
+        .btn-cancel {
+            background: #f5f5f5;
+            color: #333;
+            border: 1px solid #ddd;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .btn-cancel:hover {
+            background: #e0e0e0;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
             }
 
-            .modal-content {
-                background: white;
-                border-radius: 12px;
-                padding: 25px;
-                width: 90%;
-                max-width: 500px;
-                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-                animation: slideUp 0.3s;
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
             }
 
-            .modal-header {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                margin-bottom: 15px;
-                color: #0288D1;
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+    </style>
+
+    <script>
+        const BASE_URL = window.location.origin;
+        let allTables = [];
+        let allColumns = {};
+
+        // --- Custom Modal Logic ---
+        function showConfirm(title, message, callback) {
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalMessage').innerHTML = message;
+            document.getElementById('modalIcon').className = 'bi bi-question-circle-fill';
+            document.getElementById('customModal').style.display = 'flex';
+
+            const btnConfirm = document.getElementById('btnConfirm');
+            // Clone to remove old listeners
+            const newBtn = btnConfirm.cloneNode(true);
+            btnConfirm.parentNode.replaceChild(newBtn, btnConfirm);
+
+            newBtn.onclick = () => {
+                closeModal();
+                if (callback) callback();
+            };
+        }
+
+        function showAlert(message, type = 'success') {
+            const icon = document.getElementById('alertIcon');
+            const msg = document.getElementById('alertMessage');
+
+            msg.innerHTML = message;
+
+            if (type === 'success') {
+                icon.className = 'bi bi-check-circle-fill';
+                icon.style.color = '#4CAF50';
+            } else {
+                icon.className = 'bi bi-x-circle-fill';
+                icon.style.color = '#f44336';
             }
 
-            .modal-header h4 {
-                margin: 0;
-                font-weight: 600;
+            document.getElementById('alertModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('customModal').style.display = 'none';
+        }
+
+        function closeAlert() {
+            document.getElementById('alertModal').style.display = 'none';
+        }
+
+        // Close on outside click
+        window.onclick = function (event) {
+            if (event.target.className === 'modal-overlay') {
+                event.target.style.display = 'none';
             }
+        }
+        // --------------------------
 
-            .modal-body {
-                font-size: 14px;
-                color: #555;
-                line-height: 1.6;
-                margin-bottom: 25px;
+        document.addEventListener('DOMContentLoaded', () => {
+            // Auth check
+            if (!localStorage.getItem('access_token')) {
+                window.location.href = '/login';
+                return;
             }
+            loadTables();
+            loadInstansi();
+            loadUnitKerja();
+            toggleMode(); // Init mode
+        });
 
-            .modal-footer {
-                display: flex;
-                justify-content: flex-end;
-                gap: 12px;
-            }
+        function toggleMode() {
+            const isVarMode = document.getElementById('grafanaVarMode').checked;
 
-            .btn-confirm {
-                background: #0288D1;
-                color: white;
-                border: none;
-                padding: 10px 20px;
-                border-radius: 6px;
-                cursor: pointer;
-                font-weight: 500;
-                transition: background 0.2s;
-            }
+            // Hide/Show sections based on mode
+            const displayStyle = isVarMode ? 'none' : 'block';
 
-            .btn-confirm:hover {
-                background: #0277BD;
-            }
+            // IDs of the container divs for Steps 3, 4, 5, 6
+            // We need to add IDs to the parent divs of these inputs in the HTML first
+            // But since they don't have IDs yet, let's use a class or add IDs.
+            // Actually, I should update the HTML to add IDs to the section containers first.
+            // Let's assume I will add IDs: stepYear, stepInstansi, stepUnitKerja, stepBulan
 
-            .btn-cancel {
-                background: #f5f5f5;
-                color: #333;
-                border: 1px solid #ddd;
-                padding: 10px 20px;
-                border-radius: 6px;
-                cursor: pointer;
-                font-weight: 500;
-                transition: background 0.2s;
-            }
+            document.getElementById('stepYear').style.display = displayStyle;
+            document.getElementById('stepInstansi').style.display = displayStyle;
+            document.getElementById('stepUnitKerja').style.display = displayStyle;
+            document.getElementById('stepBulan').style.display = displayStyle;
+            document.getElementById('dividerYear').style.display = displayStyle;
+            document.getElementById('dividerInstansi').style.display = displayStyle;
+            document.getElementById('dividerUnitKerja').style.display = displayStyle;
+            document.getElementById('dividerBulan').style.display = displayStyle;
 
-            .btn-cancel:hover {
-                background: #e0e0e0;
-            }
+            // Close URL if open to avoid stale data
+            document.getElementById('resultSection').style.display = 'none';
+        }
 
-            @keyframes fadeIn {
-                from {
-                    opacity: 0;
-                }
+        async function loadTables() {
+            try {
+                const res = await fetch(`${BASE_URL}/api/stats/tables`);
+                const data = await res.json();
+                allTables = data.tables || [];
 
-                to {
-                    opacity: 1;
-                }
-            }
+                const container = document.getElementById('tableCheckboxes');
+                container.innerHTML = '';
 
-            @keyframes slideUp {
-                from {
-                    transform: translateY(20px);
-                    opacity: 0;
-                }
-
-                to {
-                    transform: translateY(0);
-                    opacity: 1;
-                }
-            }
-        </style>
-
-        <script>
-            const BASE_URL = window.location.origin;
-            let allTables = [];
-            let allColumns = {};
-
-            // --- Custom Modal Logic ---
-            function showConfirm(title, message, callback) {
-                document.getElementById('modalTitle').textContent = title;
-                document.getElementById('modalMessage').innerHTML = message;
-                document.getElementById('modalIcon').className = 'bi bi-question-circle-fill';
-                document.getElementById('customModal').style.display = 'flex';
-
-                const btnConfirm = document.getElementById('btnConfirm');
-                // Clone to remove old listeners
-                const newBtn = btnConfirm.cloneNode(true);
-                btnConfirm.parentNode.replaceChild(newBtn, btnConfirm);
-
-                newBtn.onclick = () => {
-                    closeModal();
-                    if (callback) callback();
-                };
-            }
-
-            function showAlert(message, type = 'success') {
-                const icon = document.getElementById('alertIcon');
-                const msg = document.getElementById('alertMessage');
-
-                msg.innerHTML = message;
-
-                if (type === 'success') {
-                    icon.className = 'bi bi-check-circle-fill';
-                    icon.style.color = '#4CAF50';
-                } else {
-                    icon.className = 'bi bi-x-circle-fill';
-                    icon.style.color = '#f44336';
-                }
-
-                document.getElementById('alertModal').style.display = 'flex';
-            }
-
-            function closeModal() {
-                document.getElementById('customModal').style.display = 'none';
-            }
-
-            function closeAlert() {
-                document.getElementById('alertModal').style.display = 'none';
-            }
-
-            // Close on outside click
-            window.onclick = function (event) {
-                if (event.target.className === 'modal-overlay') {
-                    event.target.style.display = 'none';
-                }
-            }
-            // --------------------------
-
-            document.addEventListener('DOMContentLoaded', () => {
-                // Auth check
-                if (!localStorage.getItem('access_token')) {
-                    window.location.href = '/login';
+                if (allTables.length === 0) {
+                    container.innerHTML = '<span class="small-text">Tidak ada tabel tersedia</span>';
                     return;
                 }
-                loadTables();
-                loadInstansi();
-                loadUnitKerja();
-                toggleMode(); // Init mode
-            });
 
-            function toggleMode() {
-                const isVarMode = document.getElementById('grafanaVarMode').checked;
-
-                // Hide/Show sections based on mode
-                const displayStyle = isVarMode ? 'none' : 'block';
-
-                // IDs of the container divs for Steps 3, 4, 5, 6
-                // We need to add IDs to the parent divs of these inputs in the HTML first
-                // But since they don't have IDs yet, let's use a class or add IDs.
-                // Actually, I should update the HTML to add IDs to the section containers first.
-                // Let's assume I will add IDs: stepYear, stepInstansi, stepUnitKerja, stepBulan
-
-                document.getElementById('stepYear').style.display = displayStyle;
-                document.getElementById('stepInstansi').style.display = displayStyle;
-                document.getElementById('stepUnitKerja').style.display = displayStyle;
-                document.getElementById('stepBulan').style.display = displayStyle;
-                document.getElementById('dividerYear').style.display = displayStyle;
-                document.getElementById('dividerInstansi').style.display = displayStyle;
-                document.getElementById('dividerUnitKerja').style.display = displayStyle;
-                document.getElementById('dividerBulan').style.display = displayStyle;
-
-                // Close URL if open to avoid stale data
-                document.getElementById('resultSection').style.display = 'none';
-            }
-
-            async function loadTables() {
-                try {
-                    const res = await fetch(`${BASE_URL}/api/stats/tables`);
-                    const data = await res.json();
-                    allTables = data.tables || [];
-
-                    const container = document.getElementById('tableCheckboxes');
-                    container.innerHTML = '';
-
-                    if (allTables.length === 0) {
-                        container.innerHTML = '<span class="small-text">Tidak ada tabel tersedia</span>';
-                        return;
-                    }
-
-                    allTables.forEach(table => {
-                        const div = document.createElement('div');
-                        div.className = 'form-check d-flex justify-content-between align-items-center mb-2';
-                        const safeName = table.display_name.replace(/'/g, "\\'");
-                        div.innerHTML = `
+                allTables.forEach(table => {
+                    const div = document.createElement('div');
+                    div.className = 'form-check d-flex justify-content-between align-items-center mb-2';
+                    const safeName = table.display_name.replace(/'/g, "\\'");
+                    div.innerHTML = `
                         <div>
                             <input class="form-check-input table-checkbox" type="checkbox" 
                                    value="${table.id}" id="table_${table.id}"
@@ -858,64 +849,64 @@
                             </label>
                         </div>
                     `;
-                        container.appendChild(div);
-                    });
-                } catch (e) {
-                    document.getElementById('tableCheckboxes').innerHTML =
-                        '<span style="color: red;">Gagal memuat tabel. Pastikan server berjalan.</span>';
-                }
+                    container.appendChild(div);
+                });
+            } catch (e) {
+                document.getElementById('tableCheckboxes').innerHTML =
+                    '<span style="color: red;">Gagal memuat tabel. Pastikan server berjalan.</span>';
+            }
+        }
+
+
+
+
+        async function onTableChange() {
+            const checked = document.querySelectorAll('.table-checkbox:checked');
+            const columnSection = document.getElementById('columnSection');
+            const columnPlaceholder = document.getElementById('columnPlaceholder');
+            const columnContainer = document.getElementById('columnCheckboxes');
+
+            if (checked.length === 0) {
+                columnSection.style.display = 'none';
+                columnPlaceholder.style.display = 'block';
+                return;
             }
 
+            columnSection.style.display = 'block';
+            columnPlaceholder.style.display = 'none';
+            columnContainer.innerHTML = '<div class="loading-spinner"></div>';
 
-
-
-            async function onTableChange() {
-                const checked = document.querySelectorAll('.table-checkbox:checked');
-                const columnSection = document.getElementById('columnSection');
-                const columnPlaceholder = document.getElementById('columnPlaceholder');
-                const columnContainer = document.getElementById('columnCheckboxes');
-
-                if (checked.length === 0) {
-                    columnSection.style.display = 'none';
-                    columnPlaceholder.style.display = 'block';
-                    return;
-                }
-
-                columnSection.style.display = 'block';
-                columnPlaceholder.style.display = 'none';
-                columnContainer.innerHTML = '<div class="loading-spinner"></div>';
-
-                let allCols = [];
-                for (const cb of checked) {
-                    const tableId = cb.value;
-                    if (!allColumns[tableId]) {
-                        try {
-                            const res = await fetch(`${BASE_URL}/api/stats/columns?table_id=${tableId}`);
-                            const data = await res.json();
-                            allColumns[tableId] = data.columns || [];
-                        } catch (e) {
-                            allColumns[tableId] = [];
-                        }
+            let allCols = [];
+            for (const cb of checked) {
+                const tableId = cb.value;
+                if (!allColumns[tableId]) {
+                    try {
+                        const res = await fetch(`${BASE_URL}/api/stats/columns?table_id=${tableId}`);
+                        const data = await res.json();
+                        allColumns[tableId] = data.columns || [];
+                    } catch (e) {
+                        allColumns[tableId] = [];
                     }
-
-                    const tableName = allTables.find(t => t.id == tableId)?.display_name || `Table ${tableId}`;
-                    allColumns[tableId].forEach(col => {
-                        if (col.is_summable) {
-                            allCols.push({
-                                table_id: tableId,
-                                table_name: tableName,
-                                name: col.name,
-                                display_name: col.display_name
-                            });
-                        }
-                    });
                 }
 
-                columnContainer.innerHTML = '';
-                allCols.forEach((col, idx) => {
-                    const div = document.createElement('div');
-                    div.className = 'form-check';
-                    div.innerHTML = `
+                const tableName = allTables.find(t => t.id == tableId)?.display_name || `Table ${tableId}`;
+                allColumns[tableId].forEach(col => {
+                    if (col.is_summable) {
+                        allCols.push({
+                            table_id: tableId,
+                            table_name: tableName,
+                            name: col.name,
+                            display_name: col.display_name
+                        });
+                    }
+                });
+            }
+
+            columnContainer.innerHTML = '';
+            allCols.forEach((col, idx) => {
+                const div = document.createElement('div');
+                div.className = 'form-check';
+                div.innerHTML = `
                     <input class="form-check-input column-checkbox" type="checkbox" 
                            value="${col.name}" data-table="${col.table_id}" id="col_${idx}">
                     <label class="form-check-label" for="col_${idx}">
@@ -923,157 +914,175 @@
                         <span class="small-text">(${col.table_name})</span>
                     </label>
                 `;
-                    columnContainer.appendChild(div);
-                });
+                columnContainer.appendChild(div);
+            });
+
+            // Add Total as a checkbox at the end
+            const totalDiv = document.createElement('div');
+            totalDiv.className = 'form-check';
+            totalDiv.style.borderTop = '1px solid #eee';
+            totalDiv.style.paddingTop = '8px';
+            totalDiv.style.marginTop = '8px';
+            totalDiv.innerHTML = `
+                    <input class="form-check-input column-checkbox" type="checkbox" 
+                           value="total" data-table="all" id="col_total" checked
+                           style="accent-color: #4CAF50;">
+                    <label class="form-check-label" for="col_total"
+                           style="font-weight: 600; color: #4CAF50;">
+                        <i class="bi bi-calculator"></i> Total
+                    </label>
+                `;
+            columnContainer.appendChild(totalDiv);
+        }
+
+        function generateURL() {
+            const checkedTables = document.querySelectorAll('.table-checkbox:checked');
+            if (checkedTables.length === 0) {
+                showAlert('Pilih minimal satu tabel!', 'error');
+                return;
             }
 
-            function generateURL() {
-                const checkedTables = document.querySelectorAll('.table-checkbox:checked');
-                if (checkedTables.length === 0) {
-                    showAlert('Pilih minimal satu tabel!', 'error');
-                    return;
+            const tableIds = Array.from(checkedTables).map(cb => cb.value);
+            const year = document.getElementById('yearSelect').value;
+            const useDisplayName = document.getElementById('useDisplayName').checked;
+            const grafanaVarMode = document.getElementById('grafanaVarMode').checked;
+            const instansiId = document.getElementById('instansiSelect').value;
+            const unitKerjaId = document.getElementById('unitKerjaSelect').value;
+
+            // Get selected months
+            const checkedMonths = document.querySelectorAll('.month-checkbox:checked');
+            const months = Array.from(checkedMonths).map(cb => cb.value);
+
+            let url;
+            if (tableIds.length === 1) {
+                url = `/api/stats/grafana/monthly?table_id=${tableIds[0]}&year=${year}&use_display_name=${useDisplayName}`;
+
+                const checkedCols = document.querySelectorAll('.column-checkbox:checked');
+                if (checkedCols.length > 0) {
+                    const cols = Array.from(checkedCols).map(cb => cb.value).join(',');
+                    url += `&columns=${cols}`;
                 }
+            } else {
+                url = `/api/stats/grafana/combined?table_ids=${tableIds.join(',')}&year=${year}&use_display_name=${useDisplayName}`;
+            }
 
-                const tableIds = Array.from(checkedTables).map(cb => cb.value);
-                const year = document.getElementById('yearSelect').value;
-                const useDisplayName = document.getElementById('useDisplayName').checked;
-                const grafanaVarMode = document.getElementById('grafanaVarMode').checked;
-                const instansiId = document.getElementById('instansiSelect').value;
-                const unitKerjaId = document.getElementById('unitKerjaSelect').value;
+            // Add filters based on mode
+            if (grafanaVarMode) {
+                // Grafana Variable Mode: use ${variable} syntax
+                url += '&year=${tahun}&instansi_id=${instansi}&unit_kerja_id=${unit_kerja}';
+            } else {
+                // Static Mode: use actual selected values
+                url += `&year=${year}`;
+                if (instansiId) {
+                    url += `&instansi_id=${instansiId}`;
+                }
+                if (unitKerjaId) {
+                    url += `&unit_kerja_id=${unitKerjaId}`;
+                }
+            }
 
-                // Get selected months
-                const checkedMonths = document.querySelectorAll('.month-checkbox:checked');
-                const months = Array.from(checkedMonths).map(cb => cb.value);
+            // Add months filter
+            if (grafanaVarMode) {
+                url += '&months=${bulan}';
+            } else if (months.length > 0) {
+                url += `&months=${months.join(',')}`;
+            }
 
-                let url;
-                if (tableIds.length === 1) {
-                    url = `/api/stats/grafana/monthly?table_id=${tableIds[0]}&year=${year}&use_display_name=${useDisplayName}`;
+            // include_total_col: check if 'total' column checkbox is checked
+            const totalColCheckbox = document.getElementById('col_total');
+            const includeTotal = totalColCheckbox ? totalColCheckbox.checked : true;
+            if (!includeTotal) {
+                url += '&include_total_col=false';
+            }
 
-                    const checkedCols = document.querySelectorAll('.column-checkbox:checked');
-                    if (checkedCols.length > 0) {
-                        const cols = Array.from(checkedCols).map(cb => cb.value).join(',');
-                        url += `&columns=${cols}`;
-                    }
+            // Add exclude_meta if checked (for pie chart)
+            const excludeMeta = document.getElementById('excludeMeta').checked;
+            if (excludeMeta) {
+                url += '&exclude_meta=true';
+            }
+
+            // Show the URL
+            document.getElementById('generatedUrl').textContent = url;
+
+            // Preview link uses actual values (not Grafana variables)
+            let previewUrl = url;
+            if (grafanaVarMode) {
+                previewUrl = previewUrl.replace('${instansi}', instansiId || '');
+                previewUrl = previewUrl.replace('${unit_kerja}', unitKerjaId || '');
+                previewUrl = previewUrl.replace('${bulan}', months.length > 0 ? months.join(',') : '');
+            }
+            document.getElementById('previewLink').href = BASE_URL + previewUrl;
+
+            document.getElementById('resultSection').style.display = 'block';
+
+            // Show mode info
+            const modeInfo = document.getElementById('modeInfo');
+            if (modeInfo) {
+                if (grafanaVarMode) {
+                    modeInfo.innerHTML = '<span style="color:#FF9800;"><i class="bi bi-link"></i> <strong>Mode Grafana Variable</strong></span> — URL ini menggunakan <code>${instansi}</code> dan <code>${unit_kerja}</code>. Paste langsung ke panel Grafana, dropdown akan otomatis terhubung!';
+                    modeInfo.style.display = 'block';
                 } else {
-                    url = `/api/stats/grafana/combined?table_ids=${tableIds.join(',')}&year=${year}&use_display_name=${useDisplayName}`;
+                    modeInfo.innerHTML = '<span style="color:#0288D1;"><i class="bi bi-pin-angle"></i> <strong>Mode Static</strong></span> — URL ini menggunakan filter tetap. Data tidak berubah saat dropdown Grafana diganti.';
+                    modeInfo.style.display = 'block';
                 }
-
-                // Add filters based on mode
-                if (grafanaVarMode) {
-                    // Grafana Variable Mode: use ${variable} syntax
-                    url += '&year=${tahun}&instansi_id=${instansi}&unit_kerja_id=${unit_kerja}';
-                } else {
-                    // Static Mode: use actual selected values
-                    url += `&year=${year}`;
-                    if (instansiId) {
-                        url += `&instansi_id=${instansiId}`;
-                    }
-                    if (unitKerjaId) {
-                        url += `&unit_kerja_id=${unitKerjaId}`;
-                    }
-                }
-
-                // Add months filter
-                if (grafanaVarMode) {
-                    url += '&months=${bulan}';
-                } else if (months.length > 0) {
-                    url += `&months=${months.join(',')}`;
-                }
-
-                // Add include_total_col param
-                const includeTotal = document.getElementById('includeTotal').checked;
-                if (!includeTotal) {
-                    url += '&include_total_col=false';
-                }
-
-                // Add exclude_meta if checked (for pie chart)
-                const excludeMeta = document.getElementById('excludeMeta').checked;
-                if (excludeMeta) {
-                    url += '&exclude_meta=true';
-                }
-
-                // Show the URL
-                document.getElementById('generatedUrl').textContent = url;
-
-                // Preview link uses actual values (not Grafana variables)
-                let previewUrl = url;
-                if (grafanaVarMode) {
-                    previewUrl = previewUrl.replace('${instansi}', instansiId || '');
-                    previewUrl = previewUrl.replace('${unit_kerja}', unitKerjaId || '');
-                    previewUrl = previewUrl.replace('${bulan}', months.length > 0 ? months.join(',') : '');
-                }
-                document.getElementById('previewLink').href = BASE_URL + previewUrl;
-
-                document.getElementById('resultSection').style.display = 'block';
-
-                // Show mode info
-                const modeInfo = document.getElementById('modeInfo');
-                if (modeInfo) {
-                    if (grafanaVarMode) {
-                        modeInfo.innerHTML = '<span style="color:#FF9800;"><i class="bi bi-link"></i> <strong>Mode Grafana Variable</strong></span> — URL ini menggunakan <code>${instansi}</code> dan <code>${unit_kerja}</code>. Paste langsung ke panel Grafana, dropdown akan otomatis terhubung!';
-                        modeInfo.style.display = 'block';
-                    } else {
-                        modeInfo.innerHTML = '<span style="color:#0288D1;"><i class="bi bi-pin-angle"></i> <strong>Mode Static</strong></span> — URL ini menggunakan filter tetap. Data tidak berubah saat dropdown Grafana diganti.';
-                        modeInfo.style.display = 'block';
-                    }
-                }
-
-                document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' });
             }
 
-            function copyURL() {
-                const url = document.getElementById('generatedUrl').textContent;
-                navigator.clipboard.writeText(url).then(() => {
-                    const btn = document.querySelector('.btn-copy');
-                    btn.innerHTML = '<i class="bi bi-check"></i> Tersalin!';
-                    btn.style.background = '#27ae60';
+            document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' });
+        }
 
-                    setTimeout(() => {
-                        btn.innerHTML = '<i class="bi bi-clipboard"></i> Salin';
-                        btn.style.background = '#0288D1';
-                    }, 2000);
+        function copyURL() {
+            const url = document.getElementById('generatedUrl').textContent;
+            navigator.clipboard.writeText(url).then(() => {
+                const btn = document.querySelector('.btn-copy');
+                btn.innerHTML = '<i class="bi bi-check"></i> Tersalin!';
+                btn.style.background = '#27ae60';
+
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="bi bi-clipboard"></i> Salin';
+                    btn.style.background = '#0288D1';
+                }, 2000);
+            });
+        }
+
+        // Load Instansi list
+        async function loadInstansi() {
+            try {
+                const res = await fetch(`${BASE_URL}/api/stats/instansi`);
+                const data = await res.json();
+                const select = document.getElementById('instansiSelect');
+                select.innerHTML = '<option value="">Semua Instansi</option>';
+                (data.instansi || []).forEach(i => {
+                    select.innerHTML += `<option value="${i.id}">${i.nama}</option>`;
                 });
+            } catch (e) {
+                console.error('Gagal memuat instansi:', e);
             }
+        }
 
-            // Load Instansi list
-            async function loadInstansi() {
-                try {
-                    const res = await fetch(`${BASE_URL}/api/stats/instansi`);
-                    const data = await res.json();
-                    const select = document.getElementById('instansiSelect');
-                    select.innerHTML = '<option value="">Semua Instansi</option>';
-                    (data.instansi || []).forEach(i => {
-                        select.innerHTML += `<option value="${i.id}">${i.nama}</option>`;
-                    });
-                } catch (e) {
-                    console.error('Gagal memuat instansi:', e);
-                }
+        // Load Unit Kerja list (chained to instansi)
+        async function loadUnitKerja(instansiId) {
+            try {
+                let url = `${BASE_URL}/api/stats/unit-kerja`;
+                if (instansiId) url += `?instansi_id=${instansiId}`;
+                const res = await fetch(url);
+                const data = await res.json();
+                const select = document.getElementById('unitKerjaSelect');
+                select.innerHTML = '<option value="">Semua Unit Kerja</option>';
+                (data.unit_kerja || []).forEach(u => {
+                    const label = u.instansi_nama ? `${u.nama} (${u.instansi_nama})` : u.nama;
+                    select.innerHTML += `<option value="${u.id}">${label}</option>`;
+                });
+            } catch (e) {
+                console.error('Gagal memuat unit kerja:', e);
             }
+        }
 
-            // Load Unit Kerja list (chained to instansi)
-            async function loadUnitKerja(instansiId) {
-                try {
-                    let url = `${BASE_URL}/api/stats/unit-kerja`;
-                    if (instansiId) url += `?instansi_id=${instansiId}`;
-                    const res = await fetch(url);
-                    const data = await res.json();
-                    const select = document.getElementById('unitKerjaSelect');
-                    select.innerHTML = '<option value="">Semua Unit Kerja</option>';
-                    (data.unit_kerja || []).forEach(u => {
-                        const label = u.instansi_nama ? `${u.nama} (${u.instansi_nama})` : u.nama;
-                        select.innerHTML += `<option value="${u.id}">${label}</option>`;
-                    });
-                } catch (e) {
-                    console.error('Gagal memuat unit kerja:', e);
-                }
-            }
-
-            // When instansi changes, reload unit kerja
-            function onInstansiChange() {
-                const instansiId = document.getElementById('instansiSelect').value;
-                loadUnitKerja(instansiId);
-            }
-        </script>
+        // When instansi changes, reload unit kerja
+        function onInstansiChange() {
+            const instansiId = document.getElementById('instansiSelect').value;
+            loadUnitKerja(instansiId);
+        }
+    </script>
 </body>
 
 </html>
