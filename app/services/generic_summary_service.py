@@ -149,3 +149,87 @@ class GenericSummaryService:
         path = self.inspector.get_table_columns(table_name)
         return len(path) > 0
 
+    def update_summary_row(self, table_id: int, unit_kerja_id: int, date_val: Date):
+        """
+        Incrementally update the summary row for a specific (Unit, YYYY-MM)
+        """
+        try:
+            if not self.check_summary_exists(table_id):
+                return
+            
+            summary_table_name = self.get_summary_table_name(table_id)
+            
+            # Get Source Table Name
+            table_def = self.db.query(TableDefinition).filter(TableDefinition.id == table_id).first()
+            if not table_def:
+                return
+            source_table_name = self._sanitize_table_name(table_def.name)
+            
+            # Identify Metric Columns
+            columns = self.inspector.get_table_columns(source_table_name)
+            metric_cols = [c['name'] for c in columns if c['data_type'] == 'integer' and c['name'] not in ['id', 'unit_kerja_id', 'instansi_id']]
+            if not metric_cols:
+                return
+
+            # Calculate Sums for this Month/Unit
+            sum_sql = [f"COALESCE(SUM(t.`{col}`), 0) as `{col}`" for col in metric_cols]
+            
+            select_sql = f"""
+                SELECT {', '.join(sum_sql)}, COUNT(*) as cnt
+                FROM {source_table_name} t
+                WHERE t.unit_kerja_id = :uid 
+                  AND YEAR(t.tanggal) = :y 
+                  AND MONTH(t.tanggal) = :m
+            """
+            
+            y = date_val.year
+            m = date_val.month
+            
+            res = self.db.execute(text(select_sql), {"uid": unit_kerja_id, "y": y, "m": m}).mappings().first()
+            
+            if not res or res['cnt'] == 0:
+                # No data left? Delete summary row
+                del_sql = f"DELETE FROM {summary_table_name} WHERE unit_kerja_id = :uid AND year = :y AND month = :m_str"
+                self.db.execute(text(del_sql), {"uid": unit_kerja_id, "y": y, "m_str": f"{y}-{m:02d}"})
+            else:
+                # Upsert
+                # Check exist
+                m_str = f"{y}-{m:02d}"
+                check = self.db.execute(text(f"SELECT 1 FROM {summary_table_name} WHERE unit_kerja_id = :uid AND year = :y AND month = :m_str"),
+                                        {"uid": unit_kerja_id, "y": y, "m_str": m_str}).first()
+                
+                if check:
+                    # Update
+                    update_parts = [f"`{col}` = :Val_{col}" for col in metric_cols]
+                    upd_sql = f"""
+                        UPDATE {summary_table_name}
+                        SET {', '.join(update_parts)}
+                        WHERE unit_kerja_id = :uid AND year = :y AND month = :m_str
+                    """
+                    params = {"uid": unit_kerja_id, "y": y, "m_str": m_str}
+                    for col in metric_cols:
+                        params[f"Val_{col}"] = res[col]
+                    
+                    self.db.execute(text(upd_sql), params)
+                else:
+                    # Insert
+                    cols = ["month", "year", "unit_kerja_id"] + metric_cols
+                    vals = [":m_str", ":y", ":uid"] + [f":Val_{col}" for col in metric_cols]
+                    
+                    ins_sql = f"""
+                        INSERT INTO {summary_table_name} ({', '.join(cols)})
+                        VALUES ({', '.join(vals)})
+                    """
+                    params = {"uid": unit_kerja_id, "y": y, "m_str": m_str}
+                    for col in metric_cols:
+                        params[f"Val_{col}"] = res[col]
+
+                    self.db.execute(text(ins_sql), params)
+            
+            self.db.commit()
+            
+        except Exception as e:
+            logger.error(f"Failed to update summary row: {e}")
+            # Don't raise, just log. Summary drift can be fixed by full refresh later.
+            # Don't raise, just log. Summary drift can be fixed by full refresh later.
+

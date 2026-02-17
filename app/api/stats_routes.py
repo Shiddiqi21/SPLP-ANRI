@@ -43,8 +43,8 @@ def get_grafana_monthly(
     - unit_kerja_id=1 akan filter berdasarkan unit kerja
     - year=2024,2025 filter tahun (support multi)
     """
-    # 1. Try Cache
-    cache_key = f"grafana:monthly:{table_id}:{year}:{columns}:{months}:{instansi_id}:{unit_kerja_id}:{use_display_name}:{exclude_meta}"
+    # 1. Try Cache (v2: Force Invalidate previous cache)
+    cache_key = f"grafana:v2:monthly:{table_id}:{year}:{columns}:{instansi_id}:{unit_kerja_id}:{include_total_col}:{exclude_meta}:{months}"
     cached_data = cache.get(cache_key)
     if cached_data:
         return cached_data
@@ -140,6 +140,8 @@ def get_grafana_monthly(
         # Check if generic summary exists for this table
         has_summary = summary_service.check_summary_exists(table.id)
         
+        # Determine strict summary usage
+        # We use summary if available AND we are not asking for raw-only columns (which we assume standard columns are in summary)
         # Determine strict summary usage
         # We use summary if available AND we are not asking for raw-only columns (which we assume standard columns are in summary)
         use_summary = has_summary
@@ -543,8 +545,8 @@ def get_grafana_yearly(
     """
     [GRAFANA OPTIMIZED] Perbandingan tahunan - Response langsung array.
     """
-    # 1. Try Cache
-    cache_key = f"grafana:yearly:{table_id}:{years}"
+    # 1. Try Cache (v2)
+    cache_key = f"grafana:v2:yearly:{table_id}:{years}"
     cached_data = cache.get(cache_key)
     if cached_data:
         return cached_data

@@ -536,6 +536,14 @@ class TableService:
                 cache.delete(f"total_count_{table_id}")
                 cache.delete("dashboard_stats")
                 
+                # [AUTO-UPDATE SUMMARY]
+                try:
+                    from app.services.generic_summary_service import GenericSummaryService
+                    gen_service = GenericSummaryService(db)
+                    gen_service.update_summary_row(table_id, unit_kerja_id, tanggal)
+                except Exception as e:
+                    print(f"Error updating summary: {e}")
+
                 return {"status": "success", "data": {"total": total}}
                 
             except Exception as e:
@@ -603,6 +611,15 @@ class TableService:
                     cache.invalidate_prefix(f"stats_table")
                     cache.delete(f"total_count_{table_id}")
                     cache.delete("dashboard_stats")
+                    
+                    # [AUTO-UPDATE SUMMARY]
+                    try:
+                        from app.services.generic_summary_service import GenericSummaryService
+                        gen_service = GenericSummaryService(session)
+                        gen_service.update_summary_row(table_id, unit_kerja_id, tanggal)
+                    except Exception as e:
+                        print(f"Error updating summary (upsert): {e}")
+                        
                     return {"status": "success", "action": "updated"}
                     
                 else:
@@ -635,6 +652,15 @@ class TableService:
                     cache.invalidate_prefix(f"stats_table")
                     cache.delete(f"total_count_{table_id}")
                     cache.delete("dashboard_stats")
+                    
+                    # [AUTO-UPDATE SUMMARY]
+                    try:
+                        from app.services.generic_summary_service import GenericSummaryService
+                        # Use session logic
+                        gen_service = GenericSummaryService(session)
+                        gen_service.update_summary_row(table_id, unit_kerja_id, tanggal)
+                    except Exception as e:
+                        print(f"Error updating summary (upsert): {e}")
                     
                     return {"status": "success", "action": "inserted"}
 
@@ -730,6 +756,23 @@ class TableService:
                 cache.delete(f"total_count_{table_id}")
                 cache.delete("dashboard_stats")
                 
+                # [AUTO-UPDATE SUMMARY]
+                try:
+                    # Need unit_kerja_id and tanggal from existing/current_data
+                    # We fetched 'current_data' earlier but it might not have unit/tanggal?
+                    # Check lines 684..
+                    # current_data fetch was conditional on sel_cols.
+                    # We need to ensure we have them.
+                    
+                    # Safe approach: fetch them now
+                    meta = db.execute(text(f"SELECT unit_kerja_id, tanggal FROM {safe_name} WHERE id = :id"), {"id": row_id}).mappings().first()
+                    if meta:
+                         from app.services.generic_summary_service import GenericSummaryService
+                         gen_service = GenericSummaryService(db)
+                         gen_service.update_summary_row(table_id, meta['unit_kerja_id'], meta['tanggal'])
+                except Exception as e:
+                    print(f"Error updating summary: {e}")
+                
                 return {"status": "success", "message": "Data berhasil diupdate"}
                 
             except Exception as e:
@@ -746,6 +789,13 @@ class TableService:
                 
                 safe_name = self._sanitize_name(table.name)
                 
+                # [AUTO-UPDATE SUMMARY] - Step 1: Capture Metadata BEFORE Delete
+                meta = None
+                try:
+                    meta = db.execute(text(f"SELECT unit_kerja_id, tanggal FROM {safe_name} WHERE id = :id"), {"id": row_id}).mappings().first()
+                except Exception:
+                    pass
+
                 sql = f"DELETE FROM {safe_name} WHERE id = :id"
                 result = db.execute(text(sql), {"id": row_id})
                 db.commit()
@@ -754,6 +804,15 @@ class TableService:
                 cache.invalidate_prefix(f"stats_table")
                 cache.delete(f"total_count_{table_id}")
                 cache.delete("dashboard_stats")
+                
+                # [AUTO-UPDATE SUMMARY] - Step 2: Update Summary AFTER Delete
+                if meta:
+                    try:
+                        from app.services.generic_summary_service import GenericSummaryService
+                        gen_service = GenericSummaryService(db)
+                        gen_service.update_summary_row(table_id, meta['unit_kerja_id'], meta['tanggal'])
+                    except Exception as e:
+                        print(f"Error updating summary after delete: {e}")
                 
                 return {"status": "success", "message": "Data berhasil dihapus"}
             except Exception as e:
