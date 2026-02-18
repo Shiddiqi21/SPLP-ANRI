@@ -30,7 +30,8 @@ def get_grafana_monthly(
     unit_kerja_id: Optional[str] = Query(None, description="Filter berdasarkan unit kerja ID"),
     use_display_name: bool = Query(True, description="Gunakan nama tampilan (display name) dari sistem"),
     exclude_meta: bool = Query(False, description="Exclude Bulan/Nama Bulan dari response (untuk pie chart)"),
-    include_total_col: bool = Query(True, description="Sertakan kolom Total dalam response")
+    include_total_col: bool = Query(True, description="Sertakan kolom Total dalam response"),
+    format: Optional[str] = Query(None, description="Output format: 'timeseries' untuk convert Bulan ke format tanggal YYYY-MM-01")
 ):
     """
     [GRAFANA OPTIMIZED] Statistik bulanan - Response langsung array tanpa wrapper.
@@ -43,8 +44,8 @@ def get_grafana_monthly(
     - unit_kerja_id=1 akan filter berdasarkan unit kerja
     - year=2024,2025 filter tahun (support multi)
     """
-    # 1. Try Cache (v2: Force Invalidate previous cache)
-    cache_key = f"grafana:v2:monthly:{table_id}:{year}:{columns}:{instansi_id}:{unit_kerja_id}:{include_total_col}:{exclude_meta}:{months}"
+    # 1. Try Cache (v15: Force Invalidate previous cache)
+    cache_key = f"grafana:v15:monthly:{table_id}:{year}:{columns}:{instansi_id}:{unit_kerja_id}:{include_total_col}:{exclude_meta}:{months}:{format}"
     cached_data = cache.get(cache_key)
     if cached_data:
         return cached_data
@@ -61,9 +62,15 @@ def get_grafana_monthly(
             raw_years = [int(y.strip()) for y in clean_year_str.split(',') if y.strip().isdigit()]
             year_list = sorted(list(set(raw_years)), reverse=True)
     
-    # If no valid year parsed AND not explicitly "All", default to current year
+    # If no valid year parsed AND not explicitly "All", logic depends on whether year arg was provided
     if not year_list and not is_all_years:
-        year_list = [datetime.now().year]
+        if year:
+            # Year param provided but parsing failed (e.g. literal '${tahun}' or garbage).
+            # Fallback to ALL YEARS (ignore filter) so we don't return empty default.
+            is_all_years = True
+        else:
+            # Year param MISSING entirely. Default to current year (standard dashboard behavior).
+            year_list = [datetime.now().year]
     
     # Parse instansi_id (handle $__all and multi-value with Grafana glob {1,2})
     instansi_ids = []
@@ -259,29 +266,71 @@ def get_grafana_monthly(
             return []
         
         monthly_data = []
+        is_timeseries = format and format.lower() == 'timeseries'
+        try:
+            with open("d:\\splp-integrator\\debug_route.log", "a") as f:
+                f.write(f"TS_DEBUG: Format={format}, IsTS={is_timeseries}, ExcludeMeta={exclude_meta}\n")
+        except:
+            pass
         for row in result:
             row_dict = dict(row)
             if use_display_name:
                 # Convert column names to display names
                 new_row = {}
-                if not exclude_meta:
+                if not exclude_meta or is_timeseries:
                     new_row['Bulan'] = row_dict['bulan']
                     new_row['Nama Bulan'] = row_dict['nama_bulan']
+                
+                # Cast Total
                 if include_total:
-                    new_row['Total'] = row_dict.get('total', 0)
+                    val = row_dict.get('total', 0)
+                    try: new_row['Total'] = int(val)
+                    except: new_row['Total'] = 0
+                
+                # Cast Columns
                 for col in selected_cols:
                     display = col_mapping.get(col, col)
-                    new_row[display] = row_dict.get(col, 0)
+                    val = row_dict.get(col, 0)
+                    try: new_row[display] = int(val)
+                    except: new_row[display] = 0
+                
                 monthly_data.append(new_row)
             else:
-                if exclude_meta:
+                if exclude_meta and not is_timeseries:
                     row_dict.pop('bulan', None)
                     row_dict.pop('nama_bulan', None)
+                
+                # Cast Total
+                if include_total:
+                    val = row_dict.get('total', 0)
+                    try: row_dict['total'] = int(val)
+                    except: row_dict['total'] = 0
+
+                # Cast Columns
+                for col in selected_cols:
+                    val = row_dict.get(col, 0)
+                    try: row_dict[col] = int(val)
+                    except: row_dict[col] = 0
+                
                 monthly_data.append(row_dict)
         
-        if not exclude_meta:
+        # Only fill missing months if we have a specific year context (year_list is not empty)
+        # If viewing "All Years", filling months for "Current Year" (default) is confusing/wrong.
+        if (not exclude_meta or is_timeseries) and year_list:
             # Fill missing months (only for filtered months or all if no filter)
-            existing_months = {d.get('Bulan') or d.get('bulan') for d in monthly_data}
+            # Ensure Bulan is treated as int for comparison (DB might return string if exclude_meta logic processed it)
+            existing_months = set()
+            for d in monthly_data:
+                try:
+                    val = d.get('Bulan') or d.get('bulan')
+                    if val:
+                        # Handle YYYY-MM format if present
+                        if isinstance(val, str) and '-' in val:
+                            existing_months.add(int(val.split('-')[1]))
+                        else:
+                            existing_months.add(int(val))
+                except (ValueError, TypeError, IndexError):
+                    pass
             month_names = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
                            'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
             
@@ -314,7 +363,9 @@ def get_grafana_monthly(
         
         # PIE CHART AGGREGATION: When exclude_meta=true (pie chart mode),
         # aggregate all rows into a single sum row so the pie chart shows correct totals
-        if exclude_meta and len(monthly_data) > 1:
+        # BUT skip this if format=timeseries (because timeseries needs rows to be separate)
+        is_timeseries = format and format.lower() == 'timeseries'
+        if exclude_meta and len(monthly_data) > 1 and not is_timeseries:
             aggregated = {}
             for row in monthly_data:
                 for key, value in row.items():
@@ -324,6 +375,71 @@ def get_grafana_monthly(
                     except (TypeError, ValueError):
                         pass  # Skip non-numeric fields
             monthly_data = [aggregated]
+
+        # TIME SERIES FORMAT: Convert month numbers to date strings for Grafana
+        if is_timeseries:
+            for row in monthly_data:
+                # Get the month number and year
+                bulan_val = row.get('Bulan') or row.get('bulan')
+                
+                # Determine year from year_list or default
+                ts_year = year_list[0] if year_list else datetime.now().year
+                if bulan_val:
+                    try:
+                        # Case 1: bulan_val is integer or string integer (1-12)
+                        month_int = int(bulan_val)
+                        date_str = f"{ts_year}-{month_int:02d}-01"
+                    except ValueError:
+                        # Case 2: bulan_val is already YYYY-MM (e.g. from SQL date_format)
+                        if isinstance(bulan_val, str) and '-' in bulan_val:
+                            date_str = f"{bulan_val}-01"
+                        else:
+                            # Fallback or invalid, skip
+                            continue
+
+                    # Replace Bulan with Tanggal (date string)
+                    if 'Bulan' in row:
+                        del row['Bulan']
+                        row['Tanggal'] = date_str
+                    elif 'bulan' in row:
+                        del row['bulan']
+                        row['tanggal'] = date_str
+                    
+                    # Add Time column (Unix Timestamp in ms) for Grafana compatibility
+                    try:
+                        dt = datetime.strptime(date_str, "%Y-%m-%d")
+                        # Convert to Unix Timestamp (milliseconds) for Grafana compatibility
+                        timestamp_ms = int(dt.timestamp() * 1000)
+                        row['Time'] = timestamp_ms
+                        row['time'] = timestamp_ms # Compatibility
+                        row['timestamp'] = timestamp_ms # Compatibility
+                    except ValueError:
+                        pass
+                    
+                    
+                    # Keep Nama Bulan for Categorical Bar Charts
+                    # row.pop('Nama Bulan', None)
+                    # row.pop('nama_bulan', None)
+                        
+            # Re-order so Time is first key, then Tanggal
+            reordered = []
+            for row in monthly_data:
+                new_row = {}
+                # 1. Time (Unix TS)
+                if 'Time' in row:
+                    new_row['Time'] = row['Time']
+                    new_row['time'] = row['time']
+                    new_row['timestamp'] = row['timestamp']
+                # 2. Tanggal (String)
+                date_key = 'Tanggal' if 'Tanggal' in row else 'tanggal'
+                if date_key in row:
+                    new_row[date_key] = row[date_key]
+                # 3. Rest of data
+                for k, v in row.items():
+                    if k != 'Time' and k != date_key:
+                        new_row[k] = v
+                reordered.append(new_row)
+            monthly_data = reordered
 
         # Return FLAT ARRAY directly (no wrapper!)
         # Cache Result (5 minutes)
@@ -502,6 +618,158 @@ def get_grafana_combined(
         # Cache Result (5 minutes)
         cache.set(cache_key, combined_list, ttl=300)
         return combined_list
+
+
+@router.get("/grafana/geo")
+def get_grafana_geo(
+    table_id: int = Query(1, description="ID tabel"),
+    year: Optional[str] = Query(None, description="Tahun data (single atau multi, pisah koma)"),
+    columns: Optional[str] = Query(None, description="Kolom untuk diagregasi (pisah koma)"),
+    months: Optional[str] = Query(None, description="Filter bulan (pisah koma)"),
+    use_display_name: bool = Query(True, description="Gunakan nama tampilan dari sistem"),
+    include_total_col: bool = Query(True, description="Sertakan kolom Total dalam response")
+):
+    """
+    [GRAFANA GEO] Statistik per instansi + koordinat lat/lng.
+    Response format untuk Grafana GeoMap panel (Infinity plugin).
+    
+    Setiap row = 1 instansi dengan latitude, longitude, nama, dan data statistik.
+    """
+    cache_key = f"grafana:geo:{table_id}:{year}:{columns}:{months}:{include_total_col}"
+    cached_data = cache.get(cache_key)
+    if cached_data:
+        return cached_data
+
+    # Parse year
+    year_list = []
+    is_all_years = False
+    if year:
+        clean_year_str = str(year).replace('{', '').replace('}', '').strip()
+        if clean_year_str.lower() in ('all', '$__all', ''):
+            is_all_years = True
+        else:
+            raw_years = [int(y.strip()) for y in clean_year_str.split(',') if y.strip().isdigit()]
+            year_list = sorted(list(set(raw_years)), reverse=True)
+    if not year_list and not is_all_years:
+        year_list = [datetime.now().year]
+
+    # Parse months
+    month_filter = None
+    if months:
+        clean_months = months.replace('{', '').replace('}', '')
+        month_filter = [int(m.strip()) for m in clean_months.split(',') if m.strip().isdigit()]
+
+    with get_db_context() as db:
+        table = db.query(TableDefinition).options(
+            joinedload(TableDefinition.columns)
+        ).filter(TableDefinition.id == table_id).first()
+        
+        if not table:
+            return []
+        
+        # Build column mapping
+        col_mapping = {c.name: c.display_name for c in table.columns}
+        col_mapping["total"] = "Total"
+        available_cols = [c.name for c in table.columns if c.is_summable]
+        if "total" not in available_cols:
+            available_cols.append("total")
+        
+        if columns:
+            selected_cols = [c.strip() for c in columns.split(',') if c.strip() in available_cols]
+        else:
+            selected_cols = available_cols[:]
+        if not selected_cols:
+            selected_cols = available_cols[:]
+        
+        # Handle include_total_col
+        if include_total_col:
+            if "total" not in selected_cols and "total" in available_cols:
+                selected_cols.append("total")
+        else:
+            if "total" in selected_cols:
+                selected_cols.remove("total")
+        
+        sum_expressions = [f"COALESCE(SUM(t.{col}), 0) as `{col}`" for col in selected_cols]
+        
+        # Use summary table if available
+        from app.services.generic_summary_service import GenericSummaryService
+        summary_service = GenericSummaryService(db)
+        has_summary = summary_service.check_summary_exists(table.id)
+        use_summary = has_summary
+        
+        if use_summary:
+            safe_table_name = summary_service.get_summary_table_name(table.id)
+        else:
+            safe_table_name = table.name.replace('-', '_').replace(' ', '_')
+        
+        # Build WHERE
+        where_conditions = []
+        params = {}
+        
+        if year_list:
+            col_year = "t.year" if use_summary else "YEAR(t.tanggal)"
+            if len(year_list) == 1:
+                where_conditions.append(f"{col_year} = :year")
+                params["year"] = year_list[0]
+            else:
+                where_conditions.append(f"{col_year} IN ({','.join(str(y) for y in year_list)})")
+        
+        if month_filter:
+            if use_summary:
+                months_padded = [f"'{m:02d}'" for m in month_filter]
+                where_conditions.append(f"SUBSTRING(t.month, 6, 2) IN ({','.join(months_padded)})")
+            else:
+                where_conditions.append(f"MONTH(t.tanggal) IN ({','.join(str(m) for m in month_filter)})")
+        
+        where_clause = f"WHERE {' AND '.join(where_conditions)}" if where_conditions else ""
+        
+        # SQL: Group by instansi, include lat/lng from instansi table
+        sql = f"""
+            SELECT 
+                i.id as instansi_id,
+                i.nama as instansi_nama,
+                i.latitude,
+                i.longitude,
+                {', '.join(sum_expressions)}
+            FROM {safe_table_name} t
+            LEFT JOIN unit_kerja u ON t.unit_kerja_id = u.id
+            LEFT JOIN instansi i ON u.instansi_id = i.id
+            {where_clause}
+            GROUP BY i.id, i.nama, i.latitude, i.longitude
+            ORDER BY i.nama
+        """
+        
+        try:
+            result = db.execute(text(sql), params).mappings().all()
+        except Exception as e:
+            print(f"GEO ENDPOINT ERROR: {e}")
+            return []
+        
+        geo_data = []
+        for row in result:
+            row_dict = dict(row)
+            geo_row = {
+                "latitude": row_dict.get("latitude"),
+                "longitude": row_dict.get("longitude"),
+                "instansi": row_dict.get("instansi_nama", "Unknown"),
+            }
+            # Add data columns
+            for col in selected_cols:
+                if use_display_name:
+                    display = col_mapping.get(col, col)
+                    geo_row[display] = row_dict.get(col, 0)
+                else:
+                    geo_row[col] = row_dict.get(col, 0)
+            geo_data.append(geo_row)
+        
+        # Filter out rows without valid coordinates
+        geo_data_valid = [r for r in geo_data if r.get("latitude") is not None and r.get("longitude") is not None]
+        
+        # If no valid geo data, return all (user may want to see data without map)
+        final_data = geo_data_valid if geo_data_valid else geo_data
+        
+        cache.set(cache_key, final_data, ttl=300)
+        return final_data
 
 
 @router.get("/grafana/var/tahun")

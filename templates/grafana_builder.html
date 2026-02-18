@@ -288,6 +288,73 @@
                 transform: rotate(360deg);
             }
         }
+
+        /* Viz Type Cards */
+        .viz-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .viz-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            position: relative;
+            background: white;
+        }
+
+        .viz-card:hover {
+            border-color: #0288D1;
+            background: #f0f9ff;
+            transform: translateY(-2px);
+        }
+
+        .viz-card.selected {
+            border-color: #0288D1;
+            background: #e1f5fe;
+            box-shadow: 0 4px 12px rgba(2, 136, 209, 0.15);
+        }
+
+        .viz-card.selected::after {
+            content: '\f26a';
+            /* bi-check-circle-fill */
+            font-family: 'bootstrap-icons';
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: #0288D1;
+            font-size: 18px;
+        }
+
+        .viz-icon {
+            font-size: 32px;
+            margin-bottom: 12px;
+            display: block;
+            color: #555;
+            transition: color 0.2s;
+        }
+
+        .viz-card.selected .viz-icon {
+            color: #0288D1;
+        }
+
+        .viz-title {
+            font-weight: 600;
+            display: block;
+            margin-bottom: 6px;
+            color: #333;
+        }
+
+        .viz-desc {
+            font-size: 12px;
+            color: #777;
+            line-height: 1.4;
+        }
     </style>
 </head>
 
@@ -296,7 +363,7 @@
     <div class="header">
         <div class="header-left">
             <i class="bi bi-bar-chart-fill" style="font-size: 24px;"></i>
-            <span class="header-title">Grafana URL Builder</span>
+            <span class="header-title">Grafana URL Builder (Fixed)</span>
         </div>
         <a href="/" class="btn-back">
             <i class="bi bi-arrow-left"></i> Kembali ke Dashboard
@@ -311,11 +378,58 @@
                 <small style="opacity: 0.8;">Pilih data yang ingin divisualisasikan, lalu salin URL ke Grafana</small>
             </div>
             <div class="card-body">
-                <!-- Step 1: Pilih Tabel -->
-                <div class="mb-4">
+                <!-- Step 1: Pilih Tipe Visualisasi -->
+                <div class="mb-5">
                     <label class="form-label">
                         <span class="step-number">1</span>
-                        <i class="bi bi-table"></i> Pilih Tabel
+                        <i class="bi bi-grid-fill"></i> Pilih Tipe Visualisasi
+                    </label>
+                    <div class="viz-options">
+                        <!-- Bar Chart (Categorical) -->
+                        <div class="viz-card selected" onclick="selectVizType('bar', this)">
+                            <i class="bi bi-bar-chart-fill viz-icon"></i>
+                            <span class="viz-title">Bar Chart</span>
+                            <span class="viz-desc">Grafik Batang (Kategori Nama Bulan)</span>
+                        </div>
+
+                        <!-- Time Series -->
+                        <div class="viz-card" onclick="selectVizType('timeseries', this)">
+                            <i class="bi bi-graph-up viz-icon"></i>
+                            <span class="viz-title">Time Series</span>
+                            <span class="viz-desc">Grafik Waktu (Sumbu X = Time)</span>
+                        </div>
+
+                        <!-- Pie Chart -->
+                        <div class="viz-card" onclick="selectVizType('pie', this)">
+                            <i class="bi bi-pie-chart-fill viz-icon"></i>
+                            <span class="viz-title">Pie Chart</span>
+                            <span class="viz-desc">Proporsi data (Persentase)</span>
+                        </div>
+
+                        <!-- GeoMap -->
+                        <div class="viz-card" onclick="selectVizType('geomap', this)">
+                            <i class="bi bi-map-fill viz-icon"></i>
+                            <span class="viz-title">Peta / GeoMap</span>
+                            <span class="viz-desc">Sebaran lokasi instansi</span>
+                        </div>
+
+                        <!-- Table -->
+                        <div class="viz-card" onclick="selectVizType('table', this)">
+                            <i class="bi bi-table viz-icon"></i>
+                            <span class="viz-title">Tabel Data</span>
+                            <span class="viz-desc">Tampilan data lengkap</span>
+                        </div>
+                    </div>
+                    <input type="hidden" id="selectedVizType" value="bar">
+                </div>
+
+                <hr class="section-divider">
+
+                <!-- Step 2: Pilih Tabel -->
+                <div class="mb-4">
+                    <label class="form-label">
+                        <span class="step-number">2</span>
+                        <i class="bi bi-table"></i> Pilih Tabel Sumber
                     </label>
                     <div id="tableCheckboxes" class="checkbox-grid">
                         <div class="loading-spinner"></div>
@@ -323,173 +437,68 @@
                     </div>
                 </div>
 
-                <!-- Global Mode Switch -->
-                <div class="mb-4 p-3" style="background: #fff8e1; border-left: 4px solid #FF9800; border-radius: 4px;">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="grafanaVarMode" checked
-                            style="accent-color: #FF9800;" onchange="toggleMode()">
-                        <label class="form-check-label" for="grafanaVarMode" style="font-weight: 600; color: #d68100;">
-                            <i class="bi bi-link"></i> Mode Grafana Variable <span class="small-text"
-                                style="font-weight: normal; color: #666;">(Aktifkan ini agar URL menggunakan variable
-                                dashboard <code>${instansi}</code>, <code>${unit_kerja}</code>, dll)</span>
+                <hr class="section-divider">
+
+                <!-- Step 3: Pilih Kolom (Dynamic visibility) -->
+                <div class="mb-4" id="step3Container">
+                    <div id="columnSection" style="display: none;">
+                        <label class="form-label">
+                            <span class="step-number">3</span>
+                            <i class="bi bi-list-columns"></i> Pilih Kolom <span class="small-text"
+                                id="colHint">(Opsional)</span>
                         </label>
+                        <div id="columnCheckboxes" class="checkbox-grid">
+                        </div>
+                    </div>
+
+                    <div id="columnPlaceholder">
+                        <label class="form-label">
+                            <span class="step-number">3</span>
+                            <i class="bi bi-list-columns"></i> Pilih Kolom
+                        </label>
+                        <p class="small-text" style="margin-left: 38px;">Pilih tabel terlebih dahulu untuk melihat
+                            daftar kolom</p>
+                    </div>
+                </div>
+
+                <div id="step3GeoMsg" style="display: none; margin-bottom: 24px;">
+                    <label class="form-label">
+                        <span class="step-number">3</span>
+                        <i class="bi bi-list-columns"></i> Kolom Data
+                    </label>
+                    <div class="alert alert-info" style="margin-left: 38px; font-size: 13px;">
+                        <i class="bi bi-info-circle"></i> Untuk GeoMap, kolom Lat/Long & Total akan dipilih otomatis.
                     </div>
                 </div>
 
                 <hr class="section-divider">
 
-                <!-- Step 2: Pilih Kolom -->
-                <div class="mb-4" id="columnSection" style="display: none;">
-                    <label class="form-label">
-                        <span class="step-number">2</span>
-                        <i class="bi bi-list-columns"></i> Pilih Kolom <span class="small-text">(Opsional - kosongkan
-                            untuk semua)</span>
-                    </label>
-                    <div id="columnCheckboxes" class="checkbox-grid">
-                    </div>
-                </div>
-
-                <div class="mb-4" id="columnPlaceholder">
-                    <label class="form-label">
-                        <span class="step-number">2</span>
-                        <i class="bi bi-list-columns"></i> Pilih Kolom
-                    </label>
-                    <p class="small-text" style="margin-left: 38px;">Pilih tabel terlebih dahulu untuk melihat daftar
-                        kolom</p>
-                </div>
-
-                <hr class="section-divider" id="dividerTable">
-
-                <!-- Step 3: Pilih Tahun -->
-                <div class="mb-4" id="stepYear">
-                    <label class="form-label">
-                        <span class="step-number">3</span>
-                        <i class="bi bi-calendar"></i> Pilih Tahun
-                    </label>
-                    <select class="form-select" id="yearSelect" style="max-width: 200px; margin-left: 38px;">
-                        <option value="2023">2023</option>
-                        <option value="2024">2024</option>
-                        <option value="2025" selected>2025</option>
-                        <option value="2026">2026</option>
-                    </select>
-                </div>
-
-                <hr class="section-divider" id="dividerYear">
-
-                <!-- Step 4: Filter Instansi -->
-                <div class="mb-4" id="stepInstansi">
+                <!-- Step 4: Opsi Tambahan (Dynamic) -->
+                <div class="mb-4" id="step4Container">
                     <label class="form-label">
                         <span class="step-number">4</span>
-                        <i class="bi bi-building"></i> Filter Instansi <span class="small-text">(Opsional)</span>
-                    </label>
-                    <select class="form-select" id="instansiSelect" style="max-width: 400px; margin-left: 38px;"
-                        onchange="onInstansiChange()"></select>
-                </div>
-
-                <hr class="section-divider" id="dividerInstansi">
-
-                <!-- Step 5: Filter Unit Kerja -->
-                <div class="mb-4" id="stepUnitKerja">
-                    <label class="form-label">
-                        <span class="step-number">5</span>
-                        <i class="bi bi-diagram-3"></i> Filter Unit Kerja <span class="small-text">(Opsional)</span>
-                    </label>
-                    <select class="form-select" id="unitKerjaSelect" style="max-width: 400px; margin-left: 38px;">
-                        <option value="">Semua Unit Kerja</option>
-                    </select>
-                </div>
-
-                <hr class="section-divider" id="dividerUnitKerja">
-
-                <!-- Step 6: Pilih Bulan -->
-                <div class="mb-4" id="stepBulan">
-                    <label class="form-label">
-                        <span class="step-number">6</span>
-                        <i class="bi bi-calendar-month"></i> Pilih Bulan <span class="small-text">(Opsional - kosongkan
-                            untuk semua bulan)</span>
-                    </label>
-                    <div class="checkbox-grid" style="margin-left: 38px; grid-template-columns: repeat(4, 1fr);">
-                        <div class="form-check">
-                            <input class="form-check-input month-checkbox" type="checkbox" value="1" id="month_1">
-                            <label class="form-check-label" for="month_1">Januari</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input month-checkbox" type="checkbox" value="2" id="month_2">
-                            <label class="form-check-label" for="month_2">Februari</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input month-checkbox" type="checkbox" value="3" id="month_3">
-                            <label class="form-check-label" for="month_3">Maret</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input month-checkbox" type="checkbox" value="4" id="month_4">
-                            <label class="form-check-label" for="month_4">April</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input month-checkbox" type="checkbox" value="5" id="month_5">
-                            <label class="form-check-label" for="month_5">Mei</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input month-checkbox" type="checkbox" value="6" id="month_6">
-                            <label class="form-check-label" for="month_6">Juni</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input month-checkbox" type="checkbox" value="7" id="month_7">
-                            <label class="form-check-label" for="month_7">Juli</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input month-checkbox" type="checkbox" value="8" id="month_8">
-                            <label class="form-check-label" for="month_8">Agustus</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input month-checkbox" type="checkbox" value="9" id="month_9">
-                            <label class="form-check-label" for="month_9">September</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input month-checkbox" type="checkbox" value="10" id="month_10">
-                            <label class="form-check-label" for="month_10">Oktober</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input month-checkbox" type="checkbox" value="11" id="month_11">
-                            <label class="form-check-label" for="month_11">November</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input month-checkbox" type="checkbox" value="12" id="month_12">
-                            <label class="form-check-label" for="month_12">Desember</label>
-                        </div>
-                    </div>
-                </div>
-
-                <hr class="section-divider" id="dividerBulan">
-
-                <!-- Step 7: Opsi -->
-                <div class="mb-4">
-                    <label class="form-label">
-                        <span class="step-number">7</span>
-                        <i class="bi bi-gear"></i> Opsi Tampilan
+                        <i class="bi bi-gear"></i> Konfigurasi Otomatis
                     </label>
                     <div style="margin-left: 38px;">
+                        <!-- Auto-configured info -->
+                        <div id="configInfo" class="alert alert-light"
+                            style="border: 1px solid #e0e0e0; font-size: 13px;">
+                            <!-- Filled by JS -->
+                        </div>
+
+                        <!-- Manual overrides -->
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="useDisplayName" checked>
                             <label class="form-check-label" for="useDisplayName">
-                                Gunakan nama tampilan (Display Name) dari sistem
+                                Gunakan label 'Display Name' (bukan nama kolom asli)
                             </label>
                         </div>
-                        <div class="form-check" style="margin-top: 8px;">
-                            <!-- Moved to top -->
-                        </div>
-                        <div class="form-check" style="margin-top: 8px;">
-                            <!-- Total option moved to column picker -->
-                        </div>
-                        <div class="form-check" style="margin-top: 8px;">
-                            <input class="form-check-input" type="checkbox" id="excludeMeta"
-                                style="accent-color: #E91E63;">
-                            <label class="form-check-label" for="excludeMeta" style="font-weight: 600; color: #E91E63;">
-                                <i class="bi bi-pie-chart"></i> Exclude Bulan dari response <span class="small-text"
-                                    style="font-weight: normal; color: #666;">(centang ini untuk Pie Chart agar
-                                    field
-                                    Bulan tidak muncul)</span>
-                            </label>
+
+                        <!-- Hidden inputs for logic -->
+                        <div style="display:none;">
+                            <input type="checkbox" id="formatTimeSeries">
+                            <input type="checkbox" id="formatGeoMap">
+                            <input type="checkbox" id="excludeMeta">
                         </div>
                     </div>
                 </div>
@@ -542,6 +551,8 @@
                     <li>Pilih tipe visualisasi (Bar Chart, Pie, dll)</li>
                     <li>Klik <strong>Apply</strong></li>
                 </ol>
+
+
 
                 <hr style="margin: 15px 0; border-color: #e0e0e0;">
 
@@ -785,40 +796,107 @@
         // --------------------------
 
         document.addEventListener('DOMContentLoaded', () => {
+            // Force reset to 'bar' to prevent browser autofill from keeping 'timeseries'
+            // while the UI visually shows 'Bar Chart' selected.
+            document.getElementById('selectedVizType').value = 'bar';
+
             // Auth check
             if (!localStorage.getItem('access_token')) {
                 window.location.href = '/login';
                 return;
             }
             loadTables();
-            loadInstansi();
-            loadUnitKerja();
-            toggleMode(); // Init mode
+            updateConfigInfo(); // Init default state
         });
 
-        function toggleMode() {
-            const isVarMode = document.getElementById('grafanaVarMode').checked;
+        // Viz Selection Logic
+        function selectVizType(type, element) {
+            // Remove active class
+            document.querySelectorAll('.viz-card').forEach(el => el.classList.remove('selected'));
+            element.classList.add('selected');
+            document.getElementById('selectedVizType').value = type;
 
-            // Hide/Show sections based on mode
-            const displayStyle = isVarMode ? 'none' : 'block';
+            updateConfigInfo();
+            updateUIForType(type);
+        }
 
-            // IDs of the container divs for Steps 3, 4, 5, 6
-            // We need to add IDs to the parent divs of these inputs in the HTML first
-            // But since they don't have IDs yet, let's use a class or add IDs.
-            // Actually, I should update the HTML to add IDs to the section containers first.
-            // Let's assume I will add IDs: stepYear, stepInstansi, stepUnitKerja, stepBulan
+        function updateUIForType(type) {
+            const step3Container = document.getElementById('step3Container');
+            const step3GeoMsg = document.getElementById('step3GeoMsg');
 
-            document.getElementById('stepYear').style.display = displayStyle;
-            document.getElementById('stepInstansi').style.display = displayStyle;
-            document.getElementById('stepUnitKerja').style.display = displayStyle;
-            document.getElementById('stepBulan').style.display = displayStyle;
-            document.getElementById('dividerYear').style.display = displayStyle;
-            document.getElementById('dividerInstansi').style.display = displayStyle;
-            document.getElementById('dividerUnitKerja').style.display = displayStyle;
-            document.getElementById('dividerBulan').style.display = displayStyle;
+            if (type === 'geomap') {
+                step3Container.style.display = 'none';
+                step3GeoMsg.style.display = 'block';
+            } else {
+                step3Container.style.display = 'block';
+                step3GeoMsg.style.display = 'none';
+            }
+        }
 
-            // Close URL if open to avoid stale data
-            document.getElementById('resultSection').style.display = 'none';
+        function updateConfigInfo() {
+            const type = document.getElementById('selectedVizType').value;
+            const infoBox = document.getElementById('configInfo');
+            const tsCheck = document.getElementById('formatTimeSeries');
+            const geoCheck = document.getElementById('formatGeoMap');
+            const metaCheck = document.getElementById('excludeMeta');
+
+            // Reset
+            tsCheck.checked = false; // Default off
+            geoCheck.checked = false; // Default off
+            metaCheck.checked = false; // Default off
+
+            let message = '';
+
+            if (type === 'timeseries') {
+                tsCheck.checked = true;
+                metaCheck.checked = true; // Exclude meta "Bulan" field since we have specific Time column
+                message = `
+                    <div style="background-color: #e3f2fd; padding: 15px; border-radius: 8px; border-left: 5px solid #2196F3;">
+                        <strong>Format Time Series AKTIF:</strong> Kolom waktu (Unix Timestamp) otomatis ditambahkan.
+                        <hr style="margin: 10px 0; border-top: 1px solid #bbdefb;">
+                        <strong>PENTING: Langkah Wajib di Grafana!</strong>
+                        <ol style="margin-left: 20px; margin-bottom: 0;">
+                            <li>Buka tab <strong>Transformations</strong> (sebelah tab Query).</li>
+                            <li>Klik <strong>+ Add transformation</strong> &rarr; Pilih <strong>Convert field type</strong>.
+                                <ul style="margin-top: 5px;">
+                                    <li><strong>Field:</strong> Pilih <code>Time</code> (atau <code>timestamp</code>).</li>
+                                    <li><strong>as:</strong> Pilih <strong>Time</strong>.</li>
+                                </ul>
+                            </li>
+                            <li style="margin-top: 8px;">Klik <strong>+ Add transformation</strong> lagi &rarr; Pilih <strong>Organize fields</strong>.
+                                <ul>
+                                    <li><strong>Sembunyikan (klik mata)</strong> pada kolom <code>time</code> dan <code>timestamp</code> agar grafik tidak rusak.</li>
+                                </ul>
+                            </li>
+                        </ol>
+                    </div>`;
+            } else if (type === 'bar') {
+                tsCheck.checked = false; // Bar chart uses standard format (Categorical)
+                metaCheck.checked = false; // Keep "Nama Bulan" metadata
+                message = '<strong>Bar Chart (Mode Fixed):</strong> Grafik Batang Kategori. Kolom "Nama Bulan" disertakan. <br><small>Format Time Series NON-AKTIF.</small>';
+            } else if (type === 'pie') {
+                metaCheck.checked = true;
+                message = '<strong>Pie Chart:</strong> Metadata bulan dinonaktifkan agar Pie Chart bersih.';
+            } else if (type === 'geomap') {
+                geoCheck.checked = true;
+                message = `
+                    <div style="background-color: #e8f5e9; padding: 15px; border-radius: 8px; border-left: 5px solid #4CAF50;">
+                        <strong>Mode GeoMap AKTIF:</strong> Koordinat Latitude/Longitude otomatis disertakan.
+                        <hr style="margin: 10px 0; border-top: 1px solid #c8e6c9;">
+                        <strong>Tips Konfigurasi Panel GeoMap:</strong>
+                        <ul style="margin-left: 20px; margin-bottom: 0;">
+                            <li><strong>Visualization:</strong> Pilih <strong>GeoMap</strong>.</li>
+                            <li><strong>Layer Type:</strong> Markers.</li>
+                            <li><strong>Location Mode:</strong> Coords.</li>
+                            <li><strong>Latitude field:</strong> <code>latitude</code>.</li>
+                            <li><strong>Longitude field:</strong> <code>longitude</code>.</li>
+                        </ul>
+                    </div>`;
+            } else {
+                message = '<strong>Tabel Standard:</strong> Semua kolom ditampilkan apa adanya.';
+            }
+
+            infoBox.innerHTML = message;
         }
 
         async function loadTables() {
@@ -856,9 +934,6 @@
                     '<span style="color: red;">Gagal memuat tabel. Pastikan server berjalan.</span>';
             }
         }
-
-
-
 
         async function onTableChange() {
             const checked = document.querySelectorAll('.table-checkbox:checked');
@@ -903,6 +978,18 @@
             }
 
             columnContainer.innerHTML = '';
+
+            // Allow all to select all
+            if (allCols.length > 0) {
+                const selectAllDiv = document.createElement('div');
+                selectAllDiv.className = 'form-check w-100 mb-2 pb-2 border-bottom';
+                selectAllDiv.innerHTML = `
+                    <input class="form-check-input" type="checkbox" id="selectAllCols" onchange="toggleAllCols(this)">
+                    <label class="form-check-label fw-bold" for="selectAllCols">Pilih Semua</label>
+                 `;
+                columnContainer.appendChild(selectAllDiv);
+            }
+
             allCols.forEach((col, idx) => {
                 const div = document.createElement('div');
                 div.className = 'form-check';
@@ -933,154 +1020,123 @@
                     </label>
                 `;
             columnContainer.appendChild(totalDiv);
+
+            updateConfigInfo(); // Refresh config info
+        }
+
+        function toggleAllCols(source) {
+            const checkboxes = document.querySelectorAll('.column-checkbox:not(#col_total)');
+            checkboxes.forEach(cb => cb.checked = source.checked);
         }
 
         function generateURL() {
-            const checkedTables = document.querySelectorAll('.table-checkbox:checked');
-            if (checkedTables.length === 0) {
+            const vizType = document.getElementById('selectedVizType').value;
+
+            const selectedTables = Array.from(document.querySelectorAll('.table-checkbox:checked')).map(cb => cb.value);
+            if (selectedTables.length === 0) {
                 showAlert('Pilih minimal satu tabel!', 'error');
                 return;
             }
 
-            const tableIds = Array.from(checkedTables).map(cb => cb.value);
-            const year = document.getElementById('yearSelect').value;
+            const selectedCols = Array.from(document.querySelectorAll('.column-checkbox:checked')).map(cb => cb.value);
+
             const useDisplayName = document.getElementById('useDisplayName').checked;
-            const grafanaVarMode = document.getElementById('grafanaVarMode').checked;
-            const instansiId = document.getElementById('instansiSelect').value;
-            const unitKerjaId = document.getElementById('unitKerjaSelect').value;
-
-            // Get selected months
-            const checkedMonths = document.querySelectorAll('.month-checkbox:checked');
-            const months = Array.from(checkedMonths).map(cb => cb.value);
-
-            let url;
-            if (tableIds.length === 1) {
-                url = `/api/stats/grafana/monthly?table_id=${tableIds[0]}&year=${year}&use_display_name=${useDisplayName}`;
-
-                const checkedCols = document.querySelectorAll('.column-checkbox:checked');
-                if (checkedCols.length > 0) {
-                    const cols = Array.from(checkedCols).map(cb => cb.value).join(',');
-                    url += `&columns=${cols}`;
-                }
-            } else {
-                url = `/api/stats/grafana/combined?table_ids=${tableIds.join(',')}&year=${year}&use_display_name=${useDisplayName}`;
-            }
-
-            // Add filters based on mode
-            if (grafanaVarMode) {
-                // Grafana Variable Mode: use ${variable} syntax
-                url += '&year=${tahun}&instansi_id=${instansi}&unit_kerja_id=${unit_kerja}';
-            } else {
-                // Static Mode: use actual selected values
-                url += `&year=${year}`;
-                if (instansiId) {
-                    url += `&instansi_id=${instansiId}`;
-                }
-                if (unitKerjaId) {
-                    url += `&unit_kerja_id=${unitKerjaId}`;
-                }
-            }
-
-            // Add months filter
-            if (grafanaVarMode) {
-                url += '&months=${bulan}';
-            } else if (months.length > 0) {
-                url += `&months=${months.join(',')}`;
-            }
-
-            // include_total_col: check if 'total' column checkbox is checked
-            const totalColCheckbox = document.getElementById('col_total');
-            const includeTotal = totalColCheckbox ? totalColCheckbox.checked : true;
-            if (!includeTotal) {
-                url += '&include_total_col=false';
-            }
-
-            // Add exclude_meta if checked (for pie chart)
+            const formatTimeSeries = document.getElementById('formatTimeSeries').checked;
+            const formatGeoMap = document.getElementById('formatGeoMap').checked; // Implicitly true for geomap type
             const excludeMeta = document.getElementById('excludeMeta').checked;
-            if (excludeMeta) {
-                url += '&exclude_meta=true';
+
+            // Base URL selection
+            let endpoint = '/api/stats/grafana/monthly';
+            if (vizType === 'geomap') {
+                endpoint = '/api/stats/grafana/geo';
             }
 
-            // Show the URL
-            document.getElementById('generatedUrl').textContent = url;
+            // Construct Params
+            const params = new URLSearchParams();
 
-            // Preview link uses actual values (not Grafana variables)
-            let previewUrl = url;
-            if (grafanaVarMode) {
-                previewUrl = previewUrl.replace('${instansi}', instansiId || '');
-                previewUrl = previewUrl.replace('${unit_kerja}', unitKerjaId || '');
-                previewUrl = previewUrl.replace('${bulan}', months.length > 0 ? months.join(',') : '');
-            }
-            document.getElementById('previewLink').href = BASE_URL + previewUrl;
+            // Helper to add if value exists
+            const addParam = (key, value) => {
+                if (value !== undefined && value !== null && value !== '') params.append(key, value);
+            };
 
-            document.getElementById('resultSection').style.display = 'block';
+            addParam('table_id', selectedTables.join(','));
 
-            // Show mode info
-            const modeInfo = document.getElementById('modeInfo');
-            if (modeInfo) {
-                if (grafanaVarMode) {
-                    modeInfo.innerHTML = '<span style="color:#FF9800;"><i class="bi bi-link"></i> <strong>Mode Grafana Variable</strong></span> — URL ini menggunakan <code>${instansi}</code> dan <code>${unit_kerja}</code>. Paste langsung ke panel Grafana, dropdown akan otomatis terhubung!';
-                    modeInfo.style.display = 'block';
-                } else {
-                    modeInfo.innerHTML = '<span style="color:#0288D1;"><i class="bi bi-pin-angle"></i> <strong>Mode Static</strong></span> — URL ini menggunakan filter tetap. Data tidak berubah saat dropdown Grafana diganti.';
-                    modeInfo.style.display = 'block';
+            // Only add columns param if columns are selected AND visualization is NOT GeoMap (GeoMap uses fixed structure)
+            if (vizType !== 'geomap') {
+                // Remove 'total' from columns list if it's treated separately? 
+                // Actually backend treats 'total' as just another column usually, OR inclusion flag.
+                // Wait, backend logic:
+                // include_total_col param handles total column separately?
+                // Let's check backend.
+                // In stats_routes.py: if include_total_col: row['Total'] = total_val
+                // So 'total' in columns list is redundant if include_total_col is used.
+
+                // Clean up 'total' from selectedCols list
+                const realCols = selectedCols.filter(c => c !== 'total');
+                if (realCols.length > 0) {
+                    addParam('columns', realCols.join(','));
                 }
             }
 
-            document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' });
+            addParam('year', '${tahun}');
+            addParam('instansi_id', '${instansi}');
+            addParam('unit_kerja_id', '${unit_kerja}');
+            addParam('months', '${bulan}');
+
+            if (useDisplayName) addParam('use_display_name', 'true');
+            if (formatTimeSeries) addParam('format', 'timeseries');
+
+            // IMPORTANT: For Pie Chart, we need exclude_meta=true
+            // For Time Series, backend force handles exclude_meta logic, but we send it anyway
+            if (excludeMeta) addParam('exclude_meta', 'true');
+
+            // Check Total Column Checkbox
+            const totalCb = document.getElementById('col_total');
+            if (totalCb && totalCb.checked) {
+                addParam('include_total_col', 'true');
+            } else {
+                addParam('include_total_col', 'false');
+            }
+
+
+            // Construct Final URL
+            // Use decodeURIComponent to keep ${} readable
+            const finalPath = `${endpoint}?${decodeURIComponent(params.toString())}`;
+
+            // Replace encoded ${} back to normal if browser encoded them (URLSearchParams usually encodes special chars)
+            // But we want Grafana variables literal.
+            // URLSearchParams encodes $ to %24, { to %7B, } to %7D.
+            const decodedPath = finalPath
+                .replace(/%24/g, '$')
+                .replace(/%7B/g, '{')
+                .replace(/%7D/g, '}');
+
+            const fullUrl = `${BASE_URL}${decodedPath}`;
+
+            document.getElementById('generatedUrl').textContent = decodedPath;
+
+            // Show result
+            document.getElementById('resultSection').style.display = 'block';
+            document.getElementById('urlBox').scrollIntoView({ behavior: 'smooth' });
+
+            // Update Preview Link
+            document.getElementById('previewLink').href = decodedPath
+                .replace('${tahun}', '2025')
+                .replace('${instansi}', '')
+                .replace('${unit_kerja}', '')
+                .replace('${bulan}', ''); // Default preview params
         }
 
         function copyURL() {
-            const url = document.getElementById('generatedUrl').textContent;
-            navigator.clipboard.writeText(url).then(() => {
+            const urlText = document.getElementById('generatedUrl').textContent;
+            navigator.clipboard.writeText(urlText).then(() => {
                 const btn = document.querySelector('.btn-copy');
-                btn.innerHTML = '<i class="bi bi-check"></i> Tersalin!';
-                btn.style.background = '#27ae60';
-
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="bi bi-check"></i> Disalin!';
                 setTimeout(() => {
-                    btn.innerHTML = '<i class="bi bi-clipboard"></i> Salin';
-                    btn.style.background = '#0288D1';
+                    btn.innerHTML = originalText;
                 }, 2000);
             });
-        }
-
-        // Load Instansi list
-        async function loadInstansi() {
-            try {
-                const res = await fetch(`${BASE_URL}/api/stats/instansi`);
-                const data = await res.json();
-                const select = document.getElementById('instansiSelect');
-                select.innerHTML = '<option value="">Semua Instansi</option>';
-                (data.instansi || []).forEach(i => {
-                    select.innerHTML += `<option value="${i.id}">${i.nama}</option>`;
-                });
-            } catch (e) {
-                console.error('Gagal memuat instansi:', e);
-            }
-        }
-
-        // Load Unit Kerja list (chained to instansi)
-        async function loadUnitKerja(instansiId) {
-            try {
-                let url = `${BASE_URL}/api/stats/unit-kerja`;
-                if (instansiId) url += `?instansi_id=${instansiId}`;
-                const res = await fetch(url);
-                const data = await res.json();
-                const select = document.getElementById('unitKerjaSelect');
-                select.innerHTML = '<option value="">Semua Unit Kerja</option>';
-                (data.unit_kerja || []).forEach(u => {
-                    const label = u.instansi_nama ? `${u.nama} (${u.instansi_nama})` : u.nama;
-                    select.innerHTML += `<option value="${u.id}">${label}</option>`;
-                });
-            } catch (e) {
-                console.error('Gagal memuat unit kerja:', e);
-            }
-        }
-
-        // When instansi changes, reload unit kerja
-        function onInstansiChange() {
-            const instansiId = document.getElementById('instansiSelect').value;
-            loadUnitKerja(instansiId);
         }
     </script>
 </body>

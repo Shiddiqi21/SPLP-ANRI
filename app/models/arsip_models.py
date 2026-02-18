@@ -2,7 +2,7 @@
 SQLAlchemy Models untuk SPLP Data Integrator
 """
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Date, DateTime, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, Date, DateTime, ForeignKey, Text, Float
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -19,6 +19,8 @@ class Instansi(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     kode = Column(String(20), unique=True, nullable=False)
     nama = Column(String(255), nullable=False)
+    latitude = Column(Float, nullable=True)  # Geo: latitude coordinate
+    longitude = Column(Float, nullable=True)  # Geo: longitude coordinate
     created_at = Column(DateTime, default=_utcnow)
     updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
     
@@ -30,6 +32,8 @@ class Instansi(Base):
             "id": self.id,
             "kode": self.kode,
             "nama": self.nama,
+            "latitude": self.latitude,
+            "longitude": self.longitude,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None
         }
